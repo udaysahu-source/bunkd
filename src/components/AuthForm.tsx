@@ -1,11 +1,11 @@
 "use client";
 // File: src/components/AuthForm.tsx
 import React, { useState } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { useStore } from "../store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
-import { LogIn, KeyRound, Mail, AlertCircle, RefreshCw } from "lucide-react";
+import { LogIn, KeyRound, Mail, AlertCircle, RefreshCw, User } from "lucide-react";
 import FirebaseSetupGuide from "./FirebaseSetupGuide";
 
 export default function AuthForm() {
@@ -62,6 +62,19 @@ export default function AuthForm() {
         friendlyMessage = "Please enter a valid email address.";
       }
       setError(friendlyMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuestLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await signInAnonymously(auth);
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to log in as guest. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -139,7 +152,7 @@ export default function AuthForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-medium rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-semibold rounded-2xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -148,6 +161,21 @@ export default function AuthForm() {
             ) : (
               "Log In"
             )}
+          </button>
+
+          <div className="relative flex items-center justify-center my-3 w-full">
+            <div className="border-t border-zinc-200/40 dark:border-zinc-800/40 w-full"></div>
+            <span className="absolute bg-white dark:bg-zinc-900 px-3 text-[9px] uppercase font-bold tracking-wider text-zinc-400 dark:text-zinc-500">Or</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            disabled={loading}
+            className="w-full py-3.5 bg-zinc-150 hover:bg-zinc-200/60 dark:bg-zinc-800 dark:hover:bg-zinc-750 text-zinc-800 dark:text-zinc-200 font-semibold rounded-2xl border border-zinc-200/10 dark:border-zinc-700/10 transition-all active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+          >
+            <User className="w-4 h-4" />
+            <span>Continue as Guest</span>
           </button>
         </form>
 
