@@ -9,15 +9,27 @@ import { LogIn, KeyRound, Mail, AlertCircle, RefreshCw } from "lucide-react";
 import FirebaseSetupGuide from "./FirebaseSetupGuide";
 
 export default function AuthForm() {
-  const { user, isFirebaseConfigured } = useStore();
+  const { user, isFirebaseConfigured, initialize } = useStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("AuthForm.tsx: Render", { user, isFirebaseConfigured });
+
   React.useEffect(() => {
+    // Bind auth listener so Zustand store is updated upon sign-in/sign-up
+    const cleanup = initialize();
+    return () => {
+      cleanup();
+    };
+  }, [initialize]);
+
+  React.useEffect(() => {
+    console.log("AuthForm.tsx: useEffect redirect check", { userEmail: user?.email ?? null, isFirebaseConfigured });
     if (user && isFirebaseConfigured) {
+      console.log("AuthForm.tsx: User logged in, redirecting to '/'");
       window.location.href = "/";
     }
   }, [user, isFirebaseConfigured]);
