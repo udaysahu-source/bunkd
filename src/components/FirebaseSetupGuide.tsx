@@ -52,7 +52,7 @@ export default function FirebaseSetupGuide() {
           <div className="flex items-start gap-2 p-3 bg-zinc-50 dark:bg-zinc-850/50 rounded-xl border border-zinc-200/20 dark:border-zinc-700/10 text-zinc-450 dark:text-zinc-500 text-[10px] leading-relaxed">
             <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
-              If you already created the `.env` file, please make sure the variables are prefixed with `PUBLIC_` (e.g. `PUBLIC_FIREBASE_API_KEY`) so they are exposed to the client bundle.
+              If you already created the `.env` file, please make sure the variables are prefixed with `NEXT_PUBLIC_` (e.g. `NEXT_PUBLIC_FIREBASE_API_KEY`) so they are exposed to the client bundle.
             </span>
           </div>
         </div>
