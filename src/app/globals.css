@@ -1,0 +1,25 @@
+/* File: src/app/globals.css */
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-outfit);
+}
+
+@variant dark (&:where(.dark, .dark *));
+
+/* Smooth transitions for theme toggle */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Hide scrollbar for clean app-shell feel */
+::-webkit-scrollbar {
+  display: none;
+}
+html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  overscroll-behavior-y: contain; /* Pull-to-refresh control for PWA */
+}
