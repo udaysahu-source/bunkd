@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { useStore } from "../store/useStore";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Save,
   LogOut,
@@ -29,8 +29,10 @@ export default function Settings() {
   // Load current values
   useEffect(() => {
     if (settings) {
-      setCycleStartDay(settings.cycleStartDay.toString());
-      setTargetPercentage(settings.targetPercentage.toString());
+      setTimeout(() => {
+        setCycleStartDay(settings.cycleStartDay.toString());
+        setTargetPercentage(settings.targetPercentage.toString());
+      }, 0);
     }
   }, [settings]);
 
@@ -38,7 +40,9 @@ export default function Settings() {
   useEffect(() => {
     const root = window.document.documentElement;
     const isDark = root.classList.contains("dark") || localStorage.getItem("theme") === "dark";
-    setTheme(isDark ? "dark" : "light");
+    setTimeout(() => {
+      setTheme(isDark ? "dark" : "light");
+    }, 0);
   }, []);
 
   const handleToggleTheme = () => {
@@ -88,11 +92,12 @@ export default function Settings() {
         type: "success",
         message: "Settings updated successfully!"
       });
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
+      const error = err as Error;
       setSaveStatus({
         type: "error",
-        message: err.message || "Failed to save settings."
+        message: error.message || "Failed to save settings."
       });
     } finally {
       setLoading(false);
@@ -101,7 +106,17 @@ export default function Settings() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      if (auth) {
+        if (auth.currentUser?.isAnonymous) {
+          // Delete the anonymous user account to keep Firebase Auth clean
+          await auth.currentUser.delete();
+          // Clear Guest local storage data
+          localStorage.removeItem("bunkd_guest_settings");
+          localStorage.removeItem("bunkd_guest_attendance");
+        } else {
+          await signOut(auth);
+        }
+      }
     } catch (err) {
       console.error("Logout failed:", err);
     }
@@ -110,18 +125,18 @@ export default function Settings() {
   return (
     <div className="space-y-6 pb-24">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
           Settings
         </h2>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-0.5">
-          Customize your tracking rules and application preferences.
+        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+          Customize your tracking preferences and application settings
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         {/* Core Config Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-zinc-850 dark:text-zinc-100 mb-5">
+        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
             Attendance Preferences
           </h3>
 
@@ -129,9 +144,9 @@ export default function Settings() {
             <div className="space-y-4">
               {/* Target Percentage */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 pl-1 flex items-center gap-1">
-                  <Target className="w-3.5 h-3.5" />
-                  <span>Target Attendance Percentage</span>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Target Attendance %</span>
                 </label>
                 <div className="relative">
                   <input
@@ -141,20 +156,20 @@ export default function Settings() {
                     required
                     value={targetPercentage}
                     onChange={(e) => setTargetPercentage(e.target.value)}
-                    className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/30 dark:border-zinc-700/30 focus:border-zinc-900 dark:focus:border-white focus:outline-none text-zinc-900 dark:text-white text-sm transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-medium"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-400 font-bold">%</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-bold">%</span>
                 </div>
-                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5 pl-1 leading-relaxed">
-                  Used to compute your Safe Bunks and Needed Lectures thresholds.
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 pl-1 leading-relaxed">
+                  Used to calculate safe bunks and lectures needed
                 </p>
               </div>
 
               {/* Cycle Start Day */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2 pl-1 flex items-center gap-1">
-                  <CalendarRange className="w-3.5 h-3.5" />
-                  <span>Cycle Start Day of Month</span>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1 flex items-center gap-1.5">
+                  <CalendarRange className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Cycle Start Day</span>
                 </label>
                 <input
                   type="number"
@@ -163,72 +178,95 @@ export default function Settings() {
                   required
                   value={cycleStartDay}
                   onChange={(e) => setCycleStartDay(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-zinc-100 dark:bg-zinc-800/50 border border-zinc-200/30 dark:border-zinc-700/30 focus:border-zinc-900 dark:focus:border-white focus:outline-none text-zinc-900 dark:text-white text-sm transition-all"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-medium"
                 />
-                <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1.5 pl-1 leading-relaxed">
-                  Strictly bounded between 1 and 28. Defines boundaries for your monthly cycle aggregations.
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 pl-1 leading-relaxed">
+                  Monthly cycle start (1-28). Defines your attendance cycle boundaries
                 </p>
               </div>
             </div>
 
-            {saveStatus && (
-              <motion.div
-                initial={{ opacity: 0, y: 3 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-2 border ${
-                  saveStatus.type === "success"
-                    ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-250/20 text-emerald-750 dark:text-emerald-400"
-                    : "bg-rose-50 dark:bg-rose-950/20 border-rose-250/20 text-rose-750 dark:text-rose-455"
-                }`}
-              >
-                {saveStatus.type === "success" ? (
-                  <CheckCircle className="w-4 h-4 shrink-0" />
-                ) : (
-                  <XCircle className="w-4 h-4 shrink-0" />
-                )}
-                <span>{saveStatus.message}</span>
-              </motion.div>
-            )}
+            <AnimatePresence mode="wait">
+              {saveStatus && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all ${
+                    saveStatus.type === "success"
+                      ? "bg-green-50/60 dark:bg-green-500/10 border-green-200/50 dark:border-green-500/30 text-green-700 dark:text-green-300"
+                      : "bg-red-50/60 dark:bg-red-500/10 border-red-200/50 dark:border-red-500/30 text-red-700 dark:text-red-300"
+                  }`}
+                >
+                  {saveStatus.type === "success" ? (
+                    <CheckCircle className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <XCircle className="w-4 h-4 shrink-0" />
+                  )}
+                  <span>{saveStatus.message}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <button
+            <motion.button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-zinc-900 hover:bg-zinc-850 dark:bg-white dark:hover:bg-zinc-100 text-white dark:text-zinc-900 font-semibold rounded-2xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2 disabled:opacity-55"
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-700 dark:hover:to-purple-800 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="w-4 h-4" />
               <span>Save Preferences</span>
-            </button>
+            </motion.button>
           </form>
-        </div>
+        </motion.div>
 
         {/* System Options Card */}
-        <div className="bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold text-zinc-850 dark:text-zinc-100 mb-2">
-            Application Settings
+        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-sm space-y-4">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+            Application
           </h3>
 
           {/* Theme Toggle */}
-          <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/30 dark:border-zinc-700/20 rounded-2xl">
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-zinc-850 dark:text-zinc-105">App Theme</span>
-              <p className="text-[10px] text-zinc-400">Toggle between Light and Dark mode</p>
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-bunkd-bg-secondary-dark transition-all"
+            onClick={handleToggleTheme}
+          >
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-gray-900 dark:text-white block">Theme</span>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">{theme === "dark" ? "Dark Mode" : "Light Mode"}</p>
             </div>
-            <button
-              onClick={handleToggleTheme}
-              className="p-3 bg-white dark:bg-zinc-900 border border-zinc-200/40 dark:border-zinc-750/40 rounded-xl text-zinc-700 dark:text-zinc-300 shadow-xs hover:bg-zinc-100 transition-all active:scale-[0.96]"
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg text-white shadow-md"
             >
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Logout Button */}
-          <button
+          <motion.button
             onClick={handleLogout}
-            className="w-full py-3.5 bg-rose-50 hover:bg-rose-100/60 dark:bg-rose-950/10 dark:hover:bg-rose-950/20 border border-rose-150/40 dark:border-rose-900/30 text-rose-600 dark:text-rose-400 font-semibold rounded-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            whileTap={{ scale: 0.97 }}
+            className="w-full py-3 bg-red-50/60 hover:bg-red-100/60 dark:bg-red-500/10 dark:hover:bg-red-500/20 border border-red-200/50 dark:border-red-500/30 text-red-700 dark:text-red-300 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
-          </button>
+          </motion.button>
+        </motion.div>
+
+        {/* Info Card */}
+        <div className="bg-purple-50/50 dark:bg-purple-500/5 border border-purple-200/50 dark:border-purple-500/20 rounded-2xl p-4">
+          <div className="flex gap-3">
+            <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-xs font-semibold text-purple-900 dark:text-purple-300 mb-1">About Bunkd</p>
+              <p className="text-[10px] text-purple-800/70 dark:text-purple-300/70 leading-relaxed">
+                Track Smart. Bunk Safe. Your premium attendance tracker for college students, built with speed and elegance.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

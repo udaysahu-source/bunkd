@@ -2,24 +2,89 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-outfit);
+  --font-sans: var(--font-geist);
+  --font-mono: var(--font-geist-mono);
+  
+  /* Bunkd Color System */
+  --color-bunkd-bg: #fafafa;
+  --color-bunkd-bg-secondary: #f4f4f5;
+  --color-bunkd-bg-dark: #09090b;
+  --color-bunkd-bg-secondary-dark: #111114;
+  
+  --color-bunkd-card: #ffffff;
+  --color-bunkd-card-elevated: #f9f9fa;
+  --color-bunkd-card-dark: #18181f;
+  --color-bunkd-card-elevated-dark: #202028;
+  
+  --color-bunkd-border: #e4e4e7;
+  --color-bunkd-border-dark: #2b2b36;
+  
+  --color-bunkd-text: #000000;
+  --color-bunkd-text-secondary: #71717a;
+  --color-bunkd-text-muted: #a1a1aa;
+  --color-bunkd-text-dark: #ffffff;
+  --color-bunkd-text-secondary-dark: #a1a1aa;
+  --color-bunkd-text-muted-dark: #71717a;
+  
+  --color-bunkd-brand: #8b5cf6;
+  --color-bunkd-brand-hover: #7c3aed;
+  --color-bunkd-brand-light: #c4b5fd;
+  
+  --color-bunkd-success: #10b981;
+  --color-bunkd-success-dark: #059669;
+  --color-bunkd-error: #ef4444;
+  --color-bunkd-error-dark: #dc2626;
+  --color-bunkd-warning: #f59e0b;
+  --color-bunkd-warning-dark: #d97706;
 }
 
 @variant dark (&:where(.dark, .dark *));
 
 /* Smooth transitions for theme toggle */
 * {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-property: color, background-color, border-color, box-shadow;
+  transition-duration: 200ms;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
 }
 
 /* Hide scrollbar for clean app-shell feel */
 ::-webkit-scrollbar {
   display: none;
 }
+
 html, body {
   -ms-overflow-style: none;
   scrollbar-width: none;
-  overscroll-behavior-y: contain; /* Pull-to-refresh control for PWA */
+  overscroll-behavior-y: contain;
+}
+
+/* Typography Scale */
+@layer components {
+  .text-hero {
+    @apply text-5xl sm:text-6xl font-bold tracking-tight;
+  }
+  
+  .text-page-title {
+    @apply text-4xl sm:text-5xl font-bold tracking-tight;
+  }
+  
+  .text-section-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+  }
+  
+  .text-card-title {
+    @apply text-lg sm:text-xl font-semibold;
+  }
+  
+  .text-body {
+    @apply text-base font-medium;
+  }
+  
+  .text-caption {
+    @apply text-sm font-normal;
+  }
+  
+  .text-label {
+    @apply text-xs font-medium;
+  }
 }

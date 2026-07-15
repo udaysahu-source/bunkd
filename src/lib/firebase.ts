@@ -2,8 +2,11 @@
 "use client";
 
 import { initializeApp, getApps, getApp } from "firebase/app";
+import type { FirebaseApp } from "firebase/app";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
+import type { Firestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import type { Auth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,9 +24,9 @@ export const hasFirebaseConfig = !!(
   firebaseConfig.projectId !== "your_project_id_here"
 );
 
-let app: any = null;
-let db: any = null;
-let auth: any = null;
+let app: FirebaseApp | null = null;
+let db: Firestore | null = null;
+let auth: Auth | null = null;
 
 if (hasFirebaseConfig) {
   try {

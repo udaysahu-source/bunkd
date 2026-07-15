@@ -1,24 +1,105 @@
 {
-  "name": "Bunkd",
+  "name": "Bunkd - Track Smart. Bunk Safe.",
   "short_name": "Bunkd",
-  "description": "An offline-first progressive web app to track and optimize school attendance.",
+  "description": "Premium attendance tracker for college students. Know exactly how many lectures you can safely miss while staying above your target.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
   "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#8b5cf6",
+  "categories": ["productivity", "education"],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-narrow.png",
+      "sizes": "540x720",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "/icons/screenshot-wide.png",
+      "sizes": "1080x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
+    {
+      "src": "/icons/icon-72.png",
+      "type": "image/png",
+      "sizes": "72x72",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-96.png",
+      "type": "image/png",
+      "sizes": "96x96",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-128.png",
+      "type": "image/png",
+      "sizes": "128x128",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-144.png",
+      "type": "image/png",
+      "sizes": "144x144",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-152.png",
+      "type": "image/png",
+      "sizes": "152x152",
+      "purpose": "maskable any"
+    },
     {
       "src": "/icons/icon-192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purpose": "any maskable"
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "type": "image/png",
+      "sizes": "384x384",
+      "purpose": "maskable any"
     },
     {
       "src": "/icons/icon-512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purpose": "any maskable"
+      "purpose": "maskable any"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Log Attendance",
+      "short_name": "Log",
+      "description": "Quickly log your attendance",
+      "url": "/?tab=dashboard",
+      "icons": [
+        {
+          "src": "/icons/shortcut-log.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "View Calendar",
+      "short_name": "Calendar",
+      "description": "View your attendance calendar",
+      "url": "/?tab=calendar",
+      "icons": [
+        {
+          "src": "/icons/shortcut-calendar.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false
 }
