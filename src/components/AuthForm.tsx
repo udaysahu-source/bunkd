@@ -238,12 +238,17 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-bunkd-bg-dark p-4 transition-colors duration-300">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-bunkd-bg-dark p-4 transition-colors duration-300 relative overflow-hidden">
+      {/* Decorative premium ambient glows */}
+      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-purple-500/5 dark:bg-purple-500/5 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[350px] h-[350px] bg-purple-600/5 dark:bg-purple-600/5 blur-[100px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(139,92,246,0.02)_0,transparent_100%)] pointer-events-none" />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md bg-white dark:bg-bunkd-card-dark backdrop-blur-xl border border-gray-200/50 dark:border-bunkd-border-dark shadow-2xl rounded-3xl p-8 flex flex-col items-center relative overflow-hidden"
+        className="w-full max-w-md bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark shadow-2xl rounded-3xl p-8 flex flex-col items-center relative z-10 overflow-hidden"
       >
         <motion.div
           animate={{ scale: [0.95, 1] }}
@@ -251,28 +256,29 @@ export default function AuthForm() {
           className="mb-8 flex flex-col items-center text-center"
         >
           {/* Bunkd Logo */}
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-            <span className="text-3xl font-bold text-white">B</span>
+          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20 relative group overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-tr from-purple-600 to-purple-400 opacity-0 group-hover:opacity-100 transition-opacity duration-350" />
+            <span className="text-3xl font-extrabold text-white tracking-tighter relative z-10">B</span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white bg-gradient-to-b from-white to-gray-400 bg-clip-text text-transparent dark:to-zinc-400">
             Bunkd
           </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-sm font-semibold tracking-wide text-purple-600 dark:text-purple-400 mt-1">
             Track Smart. Bunk Safe.
           </p>
-          <p className="text-xs text-gray-500 dark:text-gray-500 mt-3 font-semibold">
-            {isSignUp ? "Create your account" : "Sign in to your account"}
+          <p className="text-xs text-gray-500 dark:text-zinc-500 mt-3 font-medium">
+            {isSignUp ? "Create your account to start skipping safely" : "Sign in to access your dashboard"}
           </p>
         </motion.div>
 
         <form onSubmit={handleSubmit} className="w-full space-y-4" noValidate>
           {/* Email Address Input */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
               Email
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500" />
               <input
                 type="email"
                 required
@@ -282,8 +288,8 @@ export default function AuthForm() {
                   setEmail(e.target.value);
                   if (emailError) setEmailError(null);
                 }}
-                placeholder="you@example.com"
-                className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark border focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 ${
+                placeholder="you@domain.com"
+                className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark/50 border focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 ${
                   emailError 
                     ? "border-red-500 dark:border-red-500/50" 
                     : "border-gray-200/50 dark:border-bunkd-border-dark"
@@ -296,10 +302,10 @@ export default function AuthForm() {
               {emailError && (
                 <motion.p
                   id="email-error"
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1 overflow-hidden"
                 >
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{emailError}</span>
@@ -310,11 +316,11 @@ export default function AuthForm() {
 
           {/* Password Input */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1">
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
               Password
             </label>
             <div className="relative">
-              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500" />
               <input
                 type={showPassword ? "text" : "password"}
                 required
@@ -325,7 +331,7 @@ export default function AuthForm() {
                   if (passwordError) setPasswordError(null);
                 }}
                 placeholder="••••••••"
-                className={`w-full pl-10 pr-10 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark border focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 ${
+                className={`w-full pl-10 pr-10 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark/50 border focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-zinc-600 ${
                   passwordError 
                     ? "border-red-500 dark:border-red-500/50" 
                     : "border-gray-200/50 dark:border-bunkd-border-dark"
@@ -356,10 +362,10 @@ export default function AuthForm() {
               {passwordError && (
                 <motion.p
                   id="password-error"
-                  initial={{ opacity: 0, y: -5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -5 }}
-                  className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1 overflow-hidden"
                 >
                   <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{passwordError}</span>
@@ -397,7 +403,7 @@ export default function AuthForm() {
                   </AnimatePresence>
                 </div>
               </div>
-              <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">
+              <span className="text-xs font-bold text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors">
                 Remember Me
               </span>
             </label>
@@ -410,7 +416,7 @@ export default function AuthForm() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-550/10 border border-red-200/50 dark:border-red-500/25 text-red-650 dark:text-red-400 text-xs font-medium"
+                className="flex items-start gap-2.5 p-3.5 rounded-2xl bg-red-50 dark:bg-red-550/10 border border-red-200/50 dark:border-red-550/20 text-red-600 dark:text-red-400 text-xs font-semibold overflow-hidden"
               >
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
@@ -422,8 +428,9 @@ export default function AuthForm() {
           <motion.button
             type="submit"
             disabled={loading}
-            whileTap={{ scale: 0.97 }}
-            className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-700 dark:hover:to-purple-800 text-white font-semibold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-500 dark:hover:to-purple-650 text-white font-bold rounded-xl shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
           >
             {loading ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -437,7 +444,7 @@ export default function AuthForm() {
           {/* Divider */}
           <div className="relative flex items-center justify-center my-6 w-full">
             <div className="border-t border-gray-200/50 dark:border-bunkd-border-dark w-full"></div>
-            <span className="absolute bg-white dark:bg-bunkd-card-dark px-3.5 text-[9px] uppercase font-bold tracking-wider text-gray-400 dark:text-gray-500">Or</span>
+            <span className="absolute bg-white dark:bg-bunkd-card-dark px-3.5 text-[9px] uppercase font-extrabold tracking-widest text-gray-400 dark:text-zinc-500">Or</span>
           </div>
 
           {/* Guest Button */}
@@ -445,8 +452,9 @@ export default function AuthForm() {
             type="button"
             onClick={handleGuestLogin}
             disabled={loading}
-            whileTap={{ scale: 0.97 }}
-            className="w-full py-3 bg-gray-100 hover:bg-gray-200 dark:bg-bunkd-bg-dark dark:hover:bg-bunkd-bg-secondary-dark text-gray-800 dark:text-gray-200 font-semibold rounded-xl border border-gray-200/50 dark:border-bunkd-border-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3 bg-gray-150/40 hover:bg-gray-150/80 dark:bg-bunkd-bg-dark dark:hover:bg-bunkd-bg-secondary-dark/60 text-gray-800 dark:text-zinc-300 font-bold rounded-xl border border-gray-200/50 dark:border-bunkd-border-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <User className="w-4 h-4 text-purple-500" />
             <span>Continue as Guest</span>
@@ -459,7 +467,7 @@ export default function AuthForm() {
             type="button"
             onClick={openForgotModal}
             whileHover={{ scale: 1.02 }}
-            className="text-xs text-gray-500 hover:text-purple-600 dark:text-gray-400 dark:hover:text-purple-400 transition-colors mt-6 font-semibold"
+            className="text-xs text-gray-500 hover:text-purple-600 dark:text-zinc-400 dark:hover:text-purple-400 transition-colors mt-6 font-bold"
           >
             Forgot Password?
           </motion.button>
@@ -469,7 +477,7 @@ export default function AuthForm() {
         <motion.button
           onClick={handleToggleMode}
           whileHover={{ scale: 1.02 }}
-          className="text-xs text-gray-550 hover:text-purple-600 dark:text-gray-405 dark:hover:text-purple-400 transition-colors mt-4 font-semibold"
+          className="text-xs text-gray-500 hover:text-purple-600 dark:text-zinc-400 dark:hover:text-purple-400 transition-colors mt-4 font-bold"
         >
           {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
         </motion.button>
@@ -547,11 +555,11 @@ export default function AuthForm() {
               ) : (
                 <form onSubmit={handleForgotSubmit} className="mt-5 space-y-4" noValidate>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
                       Email Address
                     </label>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-550" />
                       <input
                         type="email"
                         required
@@ -561,8 +569,8 @@ export default function AuthForm() {
                           setForgotEmail(e.target.value);
                           if (forgotEmailError) setForgotEmailError(null);
                         }}
-                        placeholder="you@example.com"
-                        className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark border focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all placeholder:text-gray-400 dark:placeholder:text-gray-600 ${
+                        placeholder="you@domain.com"
+                        className={`w-full pl-10 pr-4 py-3 rounded-xl bg-gray-50 dark:bg-bunkd-bg-dark/50 border focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all duration-200 placeholder:text-gray-400 dark:placeholder:text-zinc-650 ${
                           forgotEmailError 
                             ? "border-red-500 dark:border-red-500/50" 
                             : "border-gray-200/50 dark:border-bunkd-border-dark"
@@ -573,10 +581,10 @@ export default function AuthForm() {
                     <AnimatePresence>
                       {forgotEmailError && (
                         <motion.p
-                          initial={{ opacity: 0, y: -5 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -5 }}
-                          className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1"
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="text-red-500 dark:text-red-400 text-xs font-semibold mt-1.5 pl-1 flex items-center gap-1 overflow-hidden"
                         >
                           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                           <span>{forgotEmailError}</span>
@@ -588,8 +596,9 @@ export default function AuthForm() {
                   <motion.button
                     type="submit"
                     disabled={forgotLoading}
-                    whileTap={{ scale: 0.97 }}
-                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-700 dark:hover:to-purple-800 text-white font-semibold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-500 dark:hover:to-purple-650 text-white font-bold rounded-xl shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
                   >
                     {forgotLoading ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />

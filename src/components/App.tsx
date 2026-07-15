@@ -74,7 +74,7 @@ export default function App() {
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard key="dashboard" />;
+        return <Dashboard key="dashboard" setActiveTab={setActiveTab} />;
       case "calendar":
         return <Calendar key="calendar" />;
       case "settings":
@@ -122,33 +122,33 @@ export default function App() {
       </main>
 
       {/* Floating Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-bunkd-bg-dark via-white/95 dark:via-bunkd-bg-dark/95 to-transparent pointer-events-none z-45">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-bunkd-bg-dark via-white/95 dark:via-bunkd-bg-dark/95 to-transparent pointer-events-none z-45 pb-safe-bottom">
         <nav className="max-w-md mx-auto bg-white/85 dark:bg-bunkd-card-dark/85 backdrop-blur-xl border border-gray-200/40 dark:border-bunkd-border-dark shadow-2xl rounded-2xl p-2 flex items-center justify-between pointer-events-auto">
           {/* Dashboard Tab */}
           <motion.button
             onClick={() => setActiveTab("dashboard")}
-            className="flex-1 flex flex-col items-center py-3 rounded-xl relative transition-all group"
+            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
             whileTap={{ scale: 0.95 }}
           >
             {activeTab === "dashboard" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl -z-10"
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <LayoutDashboard
-              className={`w-5 h-5 transition-all ${
+              className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-600 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors ${
+              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-600 dark:text-purple-400"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             >
               Dashboard
@@ -158,28 +158,28 @@ export default function App() {
           {/* Calendar Tab */}
           <motion.button
             onClick={() => setActiveTab("calendar")}
-            className="flex-1 flex flex-col items-center py-3 rounded-xl relative transition-all group"
+            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
             whileTap={{ scale: 0.95 }}
           >
             {activeTab === "calendar" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl -z-10"
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <CalendarDays
-              className={`w-5 h-5 transition-all ${
+              className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-600 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors ${
+              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-600 dark:text-purple-400"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             >
               Calendar
@@ -189,28 +189,28 @@ export default function App() {
           {/* Settings Tab */}
           <motion.button
             onClick={() => setActiveTab("settings")}
-            className="flex-1 flex flex-col items-center py-3 rounded-xl relative transition-all group"
+            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
             whileTap={{ scale: 0.95 }}
           >
             {activeTab === "settings" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/20 rounded-xl -z-10"
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <SettingsIcon
-              className={`w-5 h-5 transition-all ${
+              className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-600 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors ${
+              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-600 dark:text-purple-400"
-                  : "text-gray-400 dark:text-gray-500 group-hover:text-gray-600 dark:group-hover:text-gray-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
               }`}
             >
               Settings

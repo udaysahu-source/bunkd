@@ -3,7 +3,7 @@ const CACHE_NAME = 'bunkd-v1';
 const ASSETS_TO_CACHE = [
   '/',
   '/login',
-  '/manifest.webmanifest',
+  '/manifest.json',
   '/favicon.svg',
 ];
 

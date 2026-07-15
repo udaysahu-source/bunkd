@@ -125,18 +125,18 @@ export default function Settings() {
   return (
     <div className="space-y-6 pb-24">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <h2 className="text-3xl font-extrabold tracking-tight text-white leading-none">
           Settings
         </h2>
-        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+        <p className="text-zinc-550 text-sm mt-2">
           Customize your tracking preferences and application settings
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
         {/* Core Config Card */}
-        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-sm">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-5">
+        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-lg">
+          <h3 className="text-lg font-bold text-white mb-5">
             Attendance Preferences
           </h3>
 
@@ -144,7 +144,7 @@ export default function Settings() {
             <div className="space-y-4">
               {/* Target Percentage */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1 flex items-center gap-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-purple-500" />
                   <span>Target Attendance %</span>
                 </label>
@@ -156,18 +156,18 @@ export default function Settings() {
                     required
                     value={targetPercentage}
                     onChange={(e) => setTargetPercentage(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-medium"
+                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark/50 border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-semibold"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-bold">%</span>
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 pl-1 leading-relaxed">
+                <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
                   Used to calculate safe bunks and lectures needed
                 </p>
               </div>
 
               {/* Cycle Start Day */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-600 dark:text-gray-400 mb-2 pl-1 flex items-center gap-1.5">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
                   <CalendarRange className="w-3.5 h-3.5 text-purple-500" />
                   <span>Cycle Start Day</span>
                 </label>
@@ -178,9 +178,9 @@ export default function Settings() {
                   required
                   value={cycleStartDay}
                   onChange={(e) => setCycleStartDay(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-400 focus:ring-1 focus:ring-purple-500/20 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-medium"
+                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark/50 border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-semibold"
                 />
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2 pl-1 leading-relaxed">
+                <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
                   Monthly cycle start (1-28). Defines your attendance cycle boundaries
                 </p>
               </div>
@@ -192,10 +192,10 @@ export default function Settings() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 border transition-all ${
+                  className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all ${
                     saveStatus.type === "success"
-                      ? "bg-green-50/60 dark:bg-green-500/10 border-green-200/50 dark:border-green-500/30 text-green-700 dark:text-green-300"
-                      : "bg-red-50/60 dark:bg-red-500/10 border-red-200/50 dark:border-red-500/30 text-red-700 dark:text-red-300"
+                      ? "bg-green-500/10 border-green-500/20 text-green-400"
+                      : "bg-red-500/10 border-red-500/20 text-red-400"
                   }`}
                 >
                   {saveStatus.type === "success" ? (
@@ -211,8 +211,9 @@ export default function Settings() {
             <motion.button
               type="submit"
               disabled={loading}
-              whileTap={{ scale: 0.97 }}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 dark:hover:from-purple-700 dark:hover:to-purple-800 text-white font-semibold rounded-lg shadow-md transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Save Preferences</span>
@@ -221,25 +222,25 @@ export default function Settings() {
         </motion.div>
 
         {/* System Options Card */}
-        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-sm space-y-4">
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
+        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-lg space-y-4">
+          <h3 className="text-lg font-bold text-white mb-4">
             Application
           </h3>
 
           {/* Theme Toggle */}
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-bunkd-bg-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-bunkd-bg-secondary-dark transition-all"
+            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-bunkd-bg-dark/30 border border-gray-200/50 dark:border-bunkd-border-dark rounded-2xl cursor-pointer hover:bg-bunkd-bg-secondary-dark/65 transition-all"
             onClick={handleToggleTheme}
           >
             <div className="space-y-1">
-              <span className="text-xs font-semibold text-gray-900 dark:text-white block">Theme</span>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">{theme === "dark" ? "Dark Mode" : "Light Mode"}</p>
+              <span className="text-xs font-bold text-white block">Theme</span>
+              <p className="text-[10px] text-gray-500 dark:text-zinc-400">{theme === "dark" ? "Dark Mode" : "Light Mode"}</p>
             </div>
             <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg text-white shadow-md"
+              className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white shadow-md"
             >
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </motion.div>
@@ -248,8 +249,9 @@ export default function Settings() {
           {/* Logout Button */}
           <motion.button
             onClick={handleLogout}
-            whileTap={{ scale: 0.97 }}
-            className="w-full py-3 bg-red-50/60 hover:bg-red-100/60 dark:bg-red-500/10 dark:hover:bg-red-500/20 border border-red-200/50 dark:border-red-500/30 text-red-700 dark:text-red-300 font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
@@ -257,12 +259,12 @@ export default function Settings() {
         </motion.div>
 
         {/* Info Card */}
-        <div className="bg-purple-50/50 dark:bg-purple-500/5 border border-purple-200/50 dark:border-purple-500/20 rounded-2xl p-4">
+        <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-4">
           <div className="flex gap-3">
-            <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+            <HelpCircle className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-purple-900 dark:text-purple-300 mb-1">About Bunkd</p>
-              <p className="text-[10px] text-purple-800/70 dark:text-purple-300/70 leading-relaxed">
+              <p className="text-xs font-bold text-purple-300 mb-1">About Bunkd</p>
+              <p className="text-[10px] text-purple-300/70 leading-relaxed">
                 Track Smart. Bunk Safe. Your premium attendance tracker for college students, built with speed and elegance.
               </p>
             </div>

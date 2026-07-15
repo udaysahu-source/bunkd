@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${geistMono.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -69,7 +69,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col font-geist bg-white dark:bg-slate-950 text-black dark:text-white transition-colors duration-300 antialiased select-none">
+      <body className="min-h-full flex flex-col font-geist bg-white dark:bg-bunkd-bg-dark text-black dark:text-white transition-colors duration-300 antialiased select-none">
         <GlobalToast />
         {children}
         
