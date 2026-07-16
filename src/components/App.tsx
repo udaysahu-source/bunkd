@@ -38,7 +38,7 @@ export default function App() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-bunkd-bg-dark flex flex-col items-center justify-center transition-colors duration-300">
+      <div className="min-h-screen bg-bunkd-bg-dark glass-bg-mesh flex flex-col items-center justify-center">
         <motion.div
           animate={{ scale: [0.95, 1, 0.95], opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -47,14 +47,14 @@ export default function App() {
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg"
+            className="w-14 h-14 glass-button-brand rounded-2xl flex items-center justify-center glow-purple"
           >
-            <div className="w-5 h-5 bg-white rounded-lg" />
+            <span className="text-white font-bold text-lg">B</span>
           </motion.div>
           <motion.span
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-xs font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500"
+            className="text-xs font-bold uppercase tracking-widest text-zinc-500"
           >
             Loading Bunkd
           </motion.span>
@@ -85,29 +85,36 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-bunkd-bg-dark text-gray-900 dark:text-white transition-colors duration-300 flex flex-col">
+    <div className="min-h-screen bg-bunkd-bg-dark glass-bg-mesh text-white flex flex-col relative">
+      {/* Ambient glow orbs — decorative background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-purple-600/[0.07] blur-[120px] rounded-full" />
+        <div className="absolute top-1/2 -right-24 w-[300px] h-[300px] bg-purple-500/[0.05] blur-[100px] rounded-full" />
+        <div className="absolute -bottom-20 left-1/3 w-[350px] h-[350px] bg-violet-600/[0.04] blur-[110px] rounded-full" />
+      </div>
+
       <InstallPrompt />
-      {/* Header Bar */}
-      <header className="sticky top-0 bg-white/70 dark:bg-bunkd-bg-dark/70 backdrop-blur-md border-b border-gray-200/50 dark:border-bunkd-border-dark z-40 transition-colors">
-        <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between">
+
+      {/* ── Glass Header ── */}
+      <header className="sticky top-0 glass-header z-40">
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            {/* Bunkd Logo/Icon */}
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+            <div className="w-8 h-8 glass-button-brand rounded-xl flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">B</span>
             </div>
-            <span className="font-bold text-base tracking-tight text-gray-900 dark:text-white">
+            <span className="font-bold text-base tracking-tight text-white">
               Bunkd
             </span>
           </div>
 
-          <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-bunkd-card-dark px-2.5 py-1.5 rounded-full border border-gray-200/50 dark:border-bunkd-border-dark max-w-[140px] truncate">
+          <span className="text-[10px] font-semibold text-zinc-400 glass-inner px-2.5 py-1.5 rounded-full max-w-[140px] truncate">
             {user.email}
           </span>
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pt-6 pb-24">
+      {/* ── Main Content ── */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pt-6 pb-28 relative z-10">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -121,9 +128,12 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      {/* Floating Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-white dark:from-bunkd-bg-dark via-white/95 dark:via-bunkd-bg-dark/95 to-transparent pointer-events-none z-45 pb-safe-bottom">
-        <nav className="max-w-md mx-auto bg-white/85 dark:bg-bunkd-card-dark/85 backdrop-blur-xl border border-gray-200/40 dark:border-bunkd-border-dark shadow-2xl rounded-2xl p-2 flex items-center justify-between pointer-events-auto">
+      {/* ── Glass Bottom Navigation ── */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 pointer-events-none z-50">
+        {/* Fade gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-bunkd-bg-dark via-bunkd-bg-dark/80 to-transparent pointer-events-none" />
+        
+        <nav className="max-w-md mx-auto glass-nav rounded-2xl p-1.5 flex items-center justify-between pointer-events-auto relative glass-shimmer">
           {/* Dashboard Tab */}
           <motion.button
             onClick={() => setActiveTab("dashboard")}
@@ -133,22 +143,27 @@ export default function App() {
             {activeTab === "dashboard" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                className="absolute inset-0 rounded-xl -z-10"
+                style={{
+                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
+                  border: "1px solid rgba(139, 92, 246, 0.25)",
+                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+                }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <LayoutDashboard
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400 scale-110"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             />
             <span
               className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             >
               Dashboard
@@ -164,22 +179,27 @@ export default function App() {
             {activeTab === "calendar" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                className="absolute inset-0 rounded-xl -z-10"
+                style={{
+                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
+                  border: "1px solid rgba(139, 92, 246, 0.25)",
+                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+                }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <CalendarDays
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400 scale-110"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             />
             <span
               className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             >
               Calendar
@@ -195,22 +215,27 @@ export default function App() {
             {activeTab === "settings" && (
               <motion.div
                 layoutId="active-tab-indicator"
-                className="absolute inset-0 bg-purple-500/10 dark:bg-purple-500/15 rounded-xl border border-purple-500/20 dark:border-purple-500/30 -z-10 shadow-[0_0_20px_rgba(139,92,246,0.12)]"
+                className="absolute inset-0 rounded-xl -z-10"
+                style={{
+                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
+                  border: "1px solid rgba(139, 92, 246, 0.25)",
+                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
+                }}
                 transition={{ type: "spring", stiffness: 380, damping: 30 }}
               />
             )}
             <SettingsIcon
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400 scale-110"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             />
             <span
               className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-gray-400 dark:text-zinc-500 group-hover:text-gray-600 dark:group-hover:text-zinc-400"
+                  ? "text-purple-400"
+                  : "text-zinc-500 group-hover:text-zinc-400"
               }`}
             >
               Settings

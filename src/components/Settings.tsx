@@ -125,18 +125,18 @@ export default function Settings() {
   return (
     <div className="space-y-6 pb-24">
       <div>
-        <h2 className="text-3xl font-extrabold tracking-tight text-white leading-none">
+        <h2 className="text-2xl font-extrabold tracking-tight text-white leading-none">
           Settings
         </h2>
-        <p className="text-zinc-550 text-sm mt-2">
-          Customize your tracking preferences and application settings
+        <p className="text-zinc-500 text-sm mt-1">
+          Customize your tracking preferences
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-5">
         {/* Core Config Card */}
-        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-lg">
-          <h3 className="text-lg font-bold text-white mb-5">
+        <motion.div className="glass-card rounded-3xl p-6 glass-shimmer">
+          <h3 className="text-base font-bold text-white mb-5">
             Attendance Preferences
           </h3>
 
@@ -144,8 +144,8 @@ export default function Settings() {
             <div className="space-y-4">
               {/* Target Percentage */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-purple-500" />
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-purple-400" />
                   <span>Target Attendance %</span>
                 </label>
                 <div className="relative">
@@ -156,19 +156,19 @@ export default function Settings() {
                     required
                     value={targetPercentage}
                     onChange={(e) => setTargetPercentage(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark/50 border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-semibold"
+                    className="w-full px-4 py-3 rounded-lg glass-input text-white text-sm font-semibold focus:outline-none"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-500 font-bold">%</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-bold">%</span>
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
+                <p className="text-[10px] text-zinc-500 mt-2 pl-1 leading-relaxed">
                   Used to calculate safe bunks and lectures needed
                 </p>
               </div>
 
               {/* Cycle Start Day */}
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
-                  <CalendarRange className="w-3.5 h-3.5 text-purple-500" />
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+                  <CalendarRange className="w-3.5 h-3.5 text-purple-400" />
                   <span>Cycle Start Day</span>
                 </label>
                 <input
@@ -178,10 +178,10 @@ export default function Settings() {
                   required
                   value={cycleStartDay}
                   onChange={(e) => setCycleStartDay(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-bunkd-bg-dark/50 border border-gray-200/50 dark:border-bunkd-border-dark focus:border-purple-500 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/10 focus:outline-none text-gray-900 dark:text-white text-sm transition-all font-semibold"
+                  className="w-full px-4 py-3 rounded-lg glass-input text-white text-sm font-semibold focus:outline-none"
                 />
-                <p className="text-[10px] text-gray-500 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
-                  Monthly cycle start (1-28). Defines your attendance cycle boundaries
+                <p className="text-[10px] text-zinc-500 mt-2 pl-1 leading-relaxed">
+                  Monthly cycle start (1-28). Defines your attendance cycle
                 </p>
               </div>
             </div>
@@ -192,11 +192,14 @@ export default function Settings() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className={`p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2 border transition-all ${
-                    saveStatus.type === "success"
-                      ? "bg-green-500/10 border-green-500/20 text-green-400"
-                      : "bg-red-500/10 border-red-500/20 text-red-400"
-                  }`}
+                  className="p-3.5 rounded-xl text-xs font-semibold flex items-center gap-2"
+                  style={{
+                    background: saveStatus.type === "success"
+                      ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                    border: saveStatus.type === "success"
+                      ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(239, 68, 68, 0.15)",
+                    color: saveStatus.type === "success" ? "#34D399" : "#F87171"
+                  }}
                 >
                   {saveStatus.type === "success" ? (
                     <CheckCircle className="w-4 h-4 shrink-0" />
@@ -213,7 +216,7 @@ export default function Settings() {
               disabled={loading}
               whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="w-full py-3 glass-button-brand text-white font-bold rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               <Save className="w-4 h-4" />
               <span>Save Preferences</span>
@@ -222,25 +225,25 @@ export default function Settings() {
         </motion.div>
 
         {/* System Options Card */}
-        <motion.div className="bg-white dark:bg-bunkd-card-dark border border-gray-200/50 dark:border-bunkd-border-dark rounded-3xl p-6 shadow-lg space-y-4">
-          <h3 className="text-lg font-bold text-white mb-4">
+        <motion.div className="glass-card rounded-3xl p-6 space-y-4 glass-shimmer">
+          <h3 className="text-base font-bold text-white mb-4">
             Application
           </h3>
 
           {/* Theme Toggle */}
           <motion.div
             whileHover={{ scale: 1.01 }}
-            className="flex items-center justify-between p-4 bg-gray-50 dark:bg-bunkd-bg-dark/30 border border-gray-200/50 dark:border-bunkd-border-dark rounded-2xl cursor-pointer hover:bg-bunkd-bg-secondary-dark/65 transition-all"
+            className="flex items-center justify-between p-4 glass-inner rounded-2xl cursor-pointer hover:bg-white/[0.02] transition-all"
             onClick={handleToggleTheme}
           >
             <div className="space-y-1">
               <span className="text-xs font-bold text-white block">Theme</span>
-              <p className="text-[10px] text-gray-500 dark:text-zinc-400">{theme === "dark" ? "Dark Mode" : "Light Mode"}</p>
+              <p className="text-[10px] text-zinc-500">{theme === "dark" ? "Dark Mode" : "Light Mode"}</p>
             </div>
             <motion.div
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl text-white shadow-md"
+              className="p-2 glass-button-brand rounded-xl text-white"
             >
               {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </motion.div>
@@ -251,7 +254,11 @@ export default function Settings() {
             onClick={handleLogout}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3 bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 text-red-400 font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full py-3 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer font-bold text-red-400"
+            style={{
+              background: "rgba(239, 68, 68, 0.06)",
+              border: "1px solid rgba(239, 68, 68, 0.12)"
+            }}
           >
             <LogOut className="w-4 h-4" />
             <span>Sign Out</span>
@@ -259,13 +266,17 @@ export default function Settings() {
         </motion.div>
 
         {/* Info Card */}
-        <div className="bg-purple-500/5 border border-purple-500/20 rounded-2xl p-4">
+        <div className="rounded-2xl p-4 glass-shimmer"
+          style={{
+            background: "rgba(139, 92, 246, 0.04)",
+            border: "1px solid rgba(139, 92, 246, 0.1)"
+          }}>
           <div className="flex gap-3">
             <HelpCircle className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
             <div>
               <p className="text-xs font-bold text-purple-300 mb-1">About Bunkd</p>
-              <p className="text-[10px] text-purple-300/70 leading-relaxed">
-                Track Smart. Bunk Safe. Your premium attendance tracker for college students, built with speed and elegance.
+              <p className="text-[10px] text-purple-300/60 leading-relaxed">
+                Track Smart. Bunk Safe. Your premium attendance tracker for college students.
               </p>
             </div>
           </div>
