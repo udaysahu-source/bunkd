@@ -12,18 +12,62 @@ import {
   Zap,
   Flame,
   ChevronDown,
-  BarChart3
+  BarChart3,
+  Bell,
+  AlertTriangle
 } from "lucide-react";
 import { calculatePercentage, calculateSafeBunks } from "../lib/attendanceMath";
 
-// ──── Empty State ────
-function EmptyState({ onLogFirst }: { onLogFirst: () => void }) {
+// ──── Onboarding State ────
+function OnboardingState({
+  logAttendance,
+  showToast
+}: {
+  logAttendance: (date: Date, attended: number, total: number, isHoliday: boolean) => Promise<void>;
+  showToast: (msg: string, type: "success" | "error" | "info") => void;
+}) {
+  const [attended, setAttended] = useState("1");
+  const [total, setTotal] = useState("1");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    const attVal = parseInt(attended);
+    const totVal = parseInt(total);
+
+    if (isNaN(attVal) || isNaN(totVal)) {
+      setError("Please enter valid numbers");
+      return;
+    }
+    if (attVal < 0 || totVal < 0) {
+      setError("Lectures cannot be negative");
+      return;
+    }
+    if (attVal > totVal) {
+      setError("Attended lectures cannot exceed total lectures");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await logAttendance(new Date(), attVal, totVal, false);
+      showToast("First class logged! Welcome to Bunkd 🚀", "success");
+    } catch (err) {
+      const errorMsg = (err as Error).message || "Failed to log attendance";
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="py-16 px-6 text-center glass-card rounded-3xl relative overflow-hidden glass-shimmer"
+      className="p-6 glass-card rounded-3xl relative overflow-hidden glass-shimmer"
     >
       {/* Decorative glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
@@ -38,22 +82,63 @@ function EmptyState({ onLogFirst }: { onLogFirst: () => void }) {
         </motion.div>
       </div>
       
-      <h2 className="text-2xl font-extrabold text-white mb-2 tracking-tight relative z-10">
-        Welcome to Bunkd
-      </h2>
-      <p className="text-zinc-400 text-sm leading-relaxed max-w-xs mx-auto mb-8 relative z-10">
-        Log your daily classes and instantly see how many you can safely skip.
-      </p>
-      
-      <motion.button
-        onClick={onLogFirst}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="inline-flex items-center gap-2 px-8 py-3.5 glass-button-brand text-white font-bold rounded-xl cursor-pointer relative z-10 text-base"
-      >
-        <Plus className="w-5 h-5" />
+      <h2 className="text-2xl font-extrabold text-white mb-2 tracking-tight text-center relative z-10">
         Log Your First Class
-      </motion.button>
+      </h2>
+      <p className="text-zinc-400 text-sm leading-relaxed max-w-xs mx-auto mb-6 text-center relative z-10">
+        Enter your current attendance to get started. We will calculate your target progress and safe bunks instantly.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-4 max-w-xs mx-auto relative z-10">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Attended</label>
+            <input
+              type="number"
+              min="0"
+              required
+              value={attended}
+              onChange={(e) => setAttended(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Total</label>
+            <input
+              type="number"
+              min="0"
+              required
+              value={total}
+              onChange={(e) => setTotal(e.target.value)}
+              className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="text-[11px] font-medium text-red-400 p-2.5 rounded-lg flex items-center gap-2 bg-red-500/10 border border-red-500/20">
+            <XCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <motion.button
+          type="submit"
+          disabled={loading}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full py-3.5 glass-button-brand text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer text-base disabled:opacity-50"
+        >
+          {loading ? (
+            <span>Logging...</span>
+          ) : (
+            <>
+              <Plus className="w-5 h-5" />
+              <span>Log Class</span>
+            </>
+          )}
+        </motion.button>
+      </form>
     </motion.div>
   );
 }
@@ -218,6 +303,22 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
     } catch { showToast("Failed to log class.", "error"); }
   };
 
+  const handleQuickAddBunk = async () => {
+    const today = new Date();
+    const docId = dateToDocId(today);
+    const existing = records.find(r => r.id === docId);
+    let attVal = 0, totVal = 1;
+    if (existing) {
+      if (existing.isHoliday) { showToast("Today is marked as holiday.", "error"); return; }
+      attVal = existing.attendedLectures;
+      totVal = existing.totalLectures + 1;
+    }
+    try {
+      await logAttendance(today, attVal, totVal, false);
+      showToast("Bunk logged! 🚫", "info");
+    } catch { showToast("Failed to log bunk.", "error"); }
+  };
+
   const formatDateString = (timestamp: number) => {
     const date = new Date(timestamp);
     return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
@@ -324,7 +425,7 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </h2>
           <p className="text-zinc-500 text-sm mt-1">Start tracking to see your stats</p>
         </div>
-        <EmptyState onLogFirst={handleOpenModal} />
+        <OnboardingState logAttendance={logAttendance} showToast={showToast} />
       </div>
     );
   }
@@ -348,6 +449,82 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
 
   const recentRecords = showAllLogs ? records.slice().reverse() : records.slice().reverse().slice(0, 5);
 
+  const todayDocId = dateToDocId(new Date());
+  const isTodayLogged = records.some(r => r.id === todayDocId);
+  const alerts: {
+    id: string;
+    type: "info" | "warning" | "success" | "streak";
+    message: string;
+    icon: React.ReactNode;
+    action?: React.ReactNode;
+  }[] = [];
+
+  // 1. Daily Attendance Alert
+  if (!isTodayLogged) {
+    alerts.push({
+      id: "daily-log",
+      type: "warning",
+      message: "You haven't logged your attendance for today yet.",
+      icon: <Bell className="w-4 h-4 text-purple-400" />,
+      action: (
+        <div className="flex gap-2 mt-2">
+          <button
+            onClick={handleQuickAddAttended}
+            className="px-3 py-1 text-xs font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors cursor-pointer"
+          >
+            Attended
+          </button>
+          <button
+            onClick={handleQuickAddBunk}
+            className="px-3 py-1 text-xs font-bold rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-colors cursor-pointer"
+          >
+            Bunked
+          </button>
+        </div>
+      )
+    });
+  }
+
+  // 2. Safe Skips Alert
+  if (metrics.percentage >= target && metrics.safeBunks > 0) {
+    alerts.push({
+      id: "safe-skips",
+      type: "success",
+      message: `You can bunk ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""} safely without dropping below your target! 🎉`,
+      icon: <CheckCircle2 className="w-4 h-4 text-green-400" />
+    });
+  }
+
+  // 3. Below Target Warning Alert
+  if (metrics.percentage < target && metrics.neededLectures > 0) {
+    alerts.push({
+      id: "warning-bunk",
+      type: "warning",
+      message: `You are below your ${target}% target. Attend the next ${metrics.neededLectures} classes consecutively to recover. 🔴`,
+      icon: <AlertTriangle className="w-4 h-4 text-red-400" />
+    });
+  }
+
+  // 4. Streak Alert
+  if (streaks.current >= 3) {
+    alerts.push({
+      id: "streak",
+      type: "streak",
+      message: `You are on a ${streaks.current}-day active attendance streak! Keep the fire burning 🔥`,
+      icon: <Flame className="w-4 h-4 text-amber-500" />
+    });
+  }
+
+  // 5. Target Alert (No safe skips left but on track)
+  if (metrics.percentage >= target && metrics.safeBunks === 0) {
+    alerts.push({
+      id: "target-border",
+      type: "info",
+      message: `You are on track but have no safe skips left. Log today to build buffer.`,
+      icon: <Zap className="w-4 h-4 text-amber-400" />
+    });
+  }
+
   return (
     <div className="space-y-5 pb-24">
       {/* ──── Greeting ──── */}
@@ -357,6 +534,38 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         </h2>
         <p className="text-sm text-zinc-500 mt-1">Here&apos;s your attendance overview</p>
       </div>
+
+      {/* ──── Smart Alerts ──── */}
+      <AnimatePresence>
+        {alerts.length > 0 && (
+          <div className="space-y-2">
+            {alerts.map((alert) => (
+              <motion.div
+                key={alert.id}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="p-4 glass-card rounded-2xl flex items-start gap-3.5 glass-shimmer"
+                style={{
+                  border: alert.type === "warning" && alert.id !== "daily-log" 
+                    ? "1px solid rgba(239, 68, 68, 0.15)"
+                    : alert.type === "success"
+                      ? "1px solid rgba(16, 185, 129, 0.15)"
+                      : "1px solid rgba(255,255,255,0.06)"
+                }}
+              >
+                <div className="mt-0.5 shrink-0">{alert.icon}</div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold text-zinc-200 leading-relaxed">
+                    {alert.message}
+                  </p>
+                  {alert.action && alert.action}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* ──── Hero Glass Card ──── */}
       <motion.div
@@ -391,27 +600,38 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
       </motion.div>
 
       {/* ──── Action Buttons ──── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-3 gap-2.5">
         <motion.button
           onClick={handleOpenModal}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="flex flex-col items-center justify-center p-5 rounded-2xl glass-button-brand text-white cursor-pointer"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-button-brand text-white cursor-pointer text-center"
         >
-          <Plus className="w-6 h-6 mb-1.5" />
-          <span className="text-sm font-bold">Log Today</span>
-          <span className="text-[10px] text-purple-200/60 mt-0.5">Full details</span>
+          <Plus className="w-5 h-5 mb-1.5" />
+          <span className="text-xs font-bold leading-tight">Log Today</span>
+          <span className="text-[9px] text-purple-200/60 mt-0.5 whitespace-nowrap">Full details</span>
         </motion.button>
 
         <motion.button
           onClick={handleQuickAddAttended}
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          className="flex flex-col items-center justify-center p-5 rounded-2xl glass-card text-white cursor-pointer glass-shimmer"
+          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-card text-white cursor-pointer glass-shimmer text-center"
         >
-          <Zap className="w-6 h-6 mb-1.5 text-amber-400" />
-          <span className="text-sm font-bold">Quick +1</span>
-          <span className="text-[10px] text-zinc-500 mt-0.5">Attended a class</span>
+          <Zap className="w-5 h-5 mb-1.5 text-emerald-400" />
+          <span className="text-xs font-bold leading-tight">Quick Attend</span>
+          <span className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Attended +1</span>
+        </motion.button>
+
+        <motion.button
+          onClick={handleQuickAddBunk}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-card text-white cursor-pointer glass-shimmer text-center"
+        >
+          <XCircle className="w-5 h-5 mb-1.5 text-rose-400" />
+          <span className="text-xs font-bold leading-tight">Quick Bunk</span>
+          <span className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Bunked +1</span>
         </motion.button>
       </div>
 
