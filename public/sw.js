@@ -1,5 +1,5 @@
 // File: public/sw.js
-const CACHE_NAME = 'bunkd-v1';
+const CACHE_NAME = 'bunkd-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/login',
@@ -17,7 +17,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate Event - Clean Up Old Caches
+// Activate Event - Clean Up Old Caches & Claim Clients Immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
@@ -33,12 +33,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch Event - Stale-While-Revalidate Strategy for Offline Support
+// Message listener to trigger immediate skip waiting if requested
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Fetch Event - Network-First for Navigation, Stale-While-Revalidate for Static Assets
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignore non-GET requests, Firebase / Google API calls (let Firebase SDK handle its own offline persistence)
+  // Ignore non-GET requests, Firebase / Google API calls
   if (
     request.method !== 'GET' || 
     url.origin.includes('firestore.googleapis.com') || 
@@ -49,6 +56,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Navigation requests: Network First, fallback to cache if offline
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request).then((cachedResponse) => {
+            return cachedResponse || caches.match('/') || caches.match('/login');
+          });
+        })
+    );
+    return;
+  }
+
+  // Asset requests: Stale-While-Revalidate
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(request).then((cachedResponse) => {
@@ -59,15 +87,11 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         }).catch((err) => {
           console.warn('Network fetch failed, serving from cache.', err);
-          // If offline and request is a navigation request, fallback to root or login
-          if (request.mode === 'navigate') {
-            return cache.match('/') || cache.match('/login');
-          }
         });
 
-        // Return cached version immediately if exists, otherwise wait for network fetch
         return cachedResponse || fetchPromise;
       });
     })
   );
 });
+

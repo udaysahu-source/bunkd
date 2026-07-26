@@ -14,17 +14,21 @@ import {
   Sun,
   CheckCircle,
   XCircle,
-  HelpCircle
+  HelpCircle,
+  Trash2,
+  AlertTriangle
 } from "lucide-react";
 
 export default function Settings() {
-  const { settings, updateSettings } = useStore();
+  const { settings, updateSettings, clearAllAttendance, showToast } = useStore();
   const [cycleStartDay, setCycleStartDay] = useState("1");
   const [targetPercentage, setTargetPercentage] = useState("75");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   // Load current values
   useEffect(() => {
@@ -101,6 +105,20 @@ export default function Settings() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmClearAll = async () => {
+    try {
+      setClearing(true);
+      await clearAllAttendance();
+      setShowClearModal(false);
+      showToast("All attendance records cleared! 🧹", "success");
+    } catch (err) {
+      console.error("Failed to clear attendance:", err);
+      showToast("Failed to clear attendance records.", "error");
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -224,6 +242,41 @@ export default function Settings() {
           </form>
         </motion.div>
 
+        {/* Danger Zone / Data Management Card */}
+        <motion.div className="glass-card rounded-3xl p-6 space-y-4 glass-shimmer">
+          <h3 className="text-base font-bold text-white mb-2">
+            Data Management
+          </h3>
+
+          <div className="p-4 glass-inner rounded-2xl space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-red-500/10 rounded-xl text-red-400 mt-0.5">
+                <Trash2 className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-xs font-bold text-white block">Clear All Attendance</span>
+                <p className="text-[10px] text-zinc-400 leading-relaxed mt-0.5">
+                  Reset and delete all logged attendance records. Your target settings will remain saved.
+                </p>
+              </div>
+            </div>
+
+            <motion.button
+              onClick={() => setShowClearModal(true)}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-2.5 rounded-xl font-bold text-xs text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              style={{
+                background: "rgba(239, 68, 68, 0.08)",
+                border: "1px solid rgba(239, 68, 68, 0.18)"
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Clear All Attendance Records</span>
+            </motion.button>
+          </div>
+        </motion.div>
+
         {/* System Options Card */}
         <motion.div className="glass-card rounded-3xl p-6 space-y-4 glass-shimmer">
           <h3 className="text-base font-bold text-white mb-4">
@@ -282,6 +335,63 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal for Clear All Attendance */}
+      <AnimatePresence>
+        {showClearModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowClearModal(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="w-full max-w-sm glass-card-elevated rounded-2xl p-6 space-y-4 z-10 glass-shimmer"
+            >
+              <div className="flex items-center gap-3 text-red-400">
+                <div className="p-3 bg-red-500/10 rounded-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-extrabold text-white">Clear All Attendance?</h4>
+                  <p className="text-[11px] text-zinc-400">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-300 leading-relaxed">
+                Are you sure you want to permanently delete all attendance logs? Your target percentage and cycle settings will not be changed.
+              </p>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowClearModal(false)}
+                  disabled={clearing}
+                  className="flex-1 py-3 glass-inner text-zinc-300 font-bold rounded-xl text-xs hover:bg-white/5 transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  type="button"
+                  onClick={handleConfirmClearAll}
+                  disabled={clearing}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md disabled:opacity-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>{clearing ? "Clearing..." : "Yes, Clear All"}</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

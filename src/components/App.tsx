@@ -74,7 +74,7 @@ export default function App() {
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
-        return <Dashboard key="dashboard" setActiveTab={setActiveTab} />;
+        return <Dashboard key="dashboard" />;
       case "calendar":
         return <Calendar key="calendar" />;
       case "settings":

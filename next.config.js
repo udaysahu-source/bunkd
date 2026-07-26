@@ -1,5 +1,4 @@
-import type { NextConfig } from "next";
-
+/** @type {import('next').NextConfig} */
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://www.gstatic.com;
@@ -16,7 +15,7 @@ const cspHeader = `
   upgrade-insecure-requests;
 `.replace(/\s{2,}/g, ' ').trim();
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   async headers() {
     return [
       {
@@ -52,4 +51,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;

@@ -18,7 +18,7 @@ import { KeyRound, Mail, AlertCircle, RefreshCw, User, Eye, EyeOff, Check, X } f
 import FirebaseSetupGuide from "./FirebaseSetupGuide";
 
 export default function AuthForm() {
-  const { user, isFirebaseConfigured, showToast } = useStore();
+  const { isFirebaseConfigured, showToast } = useStore();
   const router = useRouter();
 
   // Standard Form State
@@ -521,7 +521,7 @@ export default function AuthForm() {
                 Reset Password
               </h2>
               <p className="text-xs text-gray-650 dark:text-gray-400 mt-2 leading-relaxed font-medium">
-                Enter your email address below. We'll send you a secure link to reset your password.
+                Enter your email address below. We&apos;ll send you a secure link to reset your password.
               </p>
 
               {forgotSuccess ? (

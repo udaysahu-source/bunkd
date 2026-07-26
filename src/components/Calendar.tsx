@@ -9,12 +9,11 @@ import {
   Sun,
   XCircle,
   CheckCircle2,
-  Trash2,
-  AlertTriangle
+  Trash2
 } from "lucide-react";
 
 export default function Calendar() {
-  const { records, logAttendance, toggleHoliday, deleteRecord, showToast } = useStore();
+  const { records, logAttendance, deleteRecord, showToast } = useStore();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
@@ -107,18 +106,6 @@ export default function Calendar() {
     }
   };
 
-  const handleDirectToggleHoliday = async (date: Date, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent opening the modal
-    try {
-      await toggleHoliday(date);
-      const docId = dateToDocId(date);
-      const isNowHoliday = !records.find(r => r.id === docId)?.isHoliday;
-      showToast(isNowHoliday ? "Marked as Holiday ☀️" : "Removed Holiday status 📅", "info");
-    } catch (err) {
-      console.error("Failed to toggle holiday", err);
-    }
-  };
-
   const handleDelete = async () => {
     if (!selectedDate) return;
     try {
@@ -144,10 +131,10 @@ export default function Calendar() {
       </div>
 
       {/* Calendar Grid Container */}
-      <div className="glass-card rounded-3xl p-6 glass-shimmer">
+      <div className="glass-card rounded-3xl p-4 sm:p-6 glass-shimmer">
         {/* Month Selector */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold text-white">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-base sm:text-lg font-bold text-white">
             {monthNames[month]} {year}
           </h3>
           <div className="flex items-center gap-1.5">
@@ -169,11 +156,11 @@ export default function Calendar() {
         </div>
 
         {/* Days of Week Headers */}
-        <div className="grid grid-cols-7 gap-2 mb-3 text-center">
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3 text-center">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
             <span
               key={dayName}
-              className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-500"
+              className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-zinc-500"
             >
               {dayName}
             </span>
@@ -188,7 +175,7 @@ export default function Calendar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
             transition={{ duration: 0.22, ease: "easeOut" }}
-            className="grid grid-cols-7 gap-2"
+            className="grid grid-cols-7 gap-1 sm:gap-2"
           >
             {days.map((date, index) => {
               if (!date) {
@@ -232,10 +219,10 @@ export default function Calendar() {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => handleDayClick(date)}
-                  className={`aspect-square rounded-xl ${bgClass} ${borderClass} p-1.5 flex flex-col justify-between items-center relative cursor-pointer group transition-all`}
+                  className={`aspect-square rounded-xl ${bgClass} ${borderClass} p-1 sm:p-1.5 flex flex-col justify-between items-center relative cursor-pointer group transition-all select-none`}
                 >
                   {/* Day number */}
-                  <span className={`text-xs font-bold ${textClass}`}>
+                  <span className={`text-[11px] sm:text-xs font-bold ${textClass}`}>
                     {date.getDate()}
                   </span>
 
@@ -243,21 +230,13 @@ export default function Calendar() {
                   <div className="w-full flex items-center justify-center min-h-[14px]">
                     {record ? (
                       record.isHoliday ? (
-                        <Sun className="w-3.5 h-3.5 text-amber-400" />
+                        <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
                       ) : (
-                        <span className="text-[9px] font-extrabold tracking-tighter">
+                        <span className="text-[8px] sm:text-[9px] font-extrabold tracking-tighter">
                           {record.attendedLectures}/{record.totalLectures}
                         </span>
                       )
-                    ) : (
-                      <button
-                        onClick={(e) => handleDirectToggleHoliday(date, e)}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-purple-500/20 transition-all cursor-pointer"
-                        title="Quick Mark Holiday"
-                      >
-                        <Sun className="w-3 h-3 text-zinc-500 hover:text-amber-400" />
-                      </button>
-                    )}
+                    ) : null}
                   </div>
                 </motion.button>
               );

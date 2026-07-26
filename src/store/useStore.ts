@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { onAuthStateChanged } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { doc, collection, onSnapshot, setDoc, writeBatch } from "firebase/firestore";
+import { doc, collection, onSnapshot, setDoc, writeBatch, getDocs } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 import {
   calculateMetrics,
@@ -42,6 +42,7 @@ interface AppState {
   logAttendance: (date: Date, attended: number, total: number, isHoliday: boolean) => Promise<void>;
   toggleHoliday: (date: Date) => Promise<void>;
   deleteRecord: (dateStr: string) => Promise<void>;
+  clearAllAttendance: () => Promise<void>;
 }
 
 // Helpers
@@ -398,6 +399,33 @@ export const useStore = create<AppState>((set, get) => {
       const batch = writeBatch(db);
       batch.delete(recordRef);
       await batch.commit();
+    },
+
+    clearAllAttendance: async () => {
+      const { user } = get();
+      if (!user) throw new Error("No authenticated user");
+
+      if (user.isAnonymous) {
+        localStorage.removeItem("bunkd_guest_attendance");
+        set({ records: [] });
+        const settings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
+        calculateAndSetMetrics([], settings.cycleStartDay, settings.targetPercentage);
+        return;
+      }
+
+      if (!db) throw new Error("Database not initialized");
+
+      const attendanceRef = collection(db, "users", user.uid, "attendance");
+      const colSnap = await getDocs(attendanceRef);
+      const batch = writeBatch(db);
+      colSnap.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+      await batch.commit();
+
+      set({ records: [] });
+      const settings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
+      calculateAndSetMetrics([], settings.cycleStartDay, settings.targetPercentage);
     }
   };
 });

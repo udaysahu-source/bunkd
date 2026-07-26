@@ -1,6 +1,6 @@
 "use client";
 // File: src/components/Dashboard.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useStore, dateToDocId } from "../store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -225,22 +225,19 @@ function ProgressRing({ percentage, target }: { percentage: number; target: numb
   );
 }
 
-interface DashboardProps {
-  setActiveTab?: (tab: "dashboard" | "calendar" | "settings") => void;
-}
-
-export default function Dashboard({ setActiveTab }: DashboardProps) {
+export default function Dashboard() {
   const {
     records,
     settings,
     overallMetrics,
+    cycleMetrics,
     logAttendance,
     deleteRecord,
     showToast
   } = useStore();
 
   const [showLogModal, setShowLogModal] = useState(false);
-  const [logDate, setLogDate] = useState("");
+  const [logDate, setLogDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [attended, setAttended] = useState("1");
   const [total, setTotal] = useState("1");
   const [isHoliday, setIsHoliday] = useState(false);
@@ -249,14 +246,11 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
   const [showInsights, setShowInsights] = useState(false);
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [simLectures, setSimLectures] = useState(5);
+  const [metricView, setMetricView] = useState<"overall" | "cycle">("overall");
 
-  const metrics = overallMetrics;
+  const metrics = metricView === "overall" ? overallMetrics : cycleMetrics;
   const target = settings?.targetPercentage ?? 75;
   const hasRecords = records.length > 0;
-
-  useEffect(() => {
-    setLogDate(new Date().toISOString().split("T")[0]);
-  }, []);
 
   const handleOpenModal = () => {
     setLogDate(new Date().toISOString().split("T")[0]);
@@ -576,6 +570,32 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
         <div className="absolute -top-16 -right-16 w-48 h-48 bg-purple-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
         <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-violet-500/[0.06] blur-[70px] rounded-full pointer-events-none" />
 
+        {/* View Mode Toggle */}
+        <div className="flex items-center p-1 bg-white/[0.04] border border-white/[0.06] rounded-xl mb-5 relative z-10">
+          <button
+            type="button"
+            onClick={() => setMetricView("overall")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              metricView === "overall"
+                ? "bg-purple-600 text-white shadow-md"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Overall Attendance
+          </button>
+          <button
+            type="button"
+            onClick={() => setMetricView("cycle")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              metricView === "cycle"
+                ? "bg-purple-600 text-white shadow-md"
+                : "text-zinc-400 hover:text-white"
+            }`}
+          >
+            Monthly Cycle
+          </button>
+        </div>
+
         <ProgressRing percentage={metrics.percentage} target={target} />
 
         <p className="mt-4 text-sm font-semibold text-zinc-300 max-w-xs relative z-10">
@@ -598,6 +618,36 @@ export default function Dashboard({ setActiveTab }: DashboardProps) {
           </div>
         </div>
       </motion.div>
+
+      {/* ──── Overall vs Monthly Attendance Summary ──── */}
+      <div className="glass-card rounded-2xl p-4 glass-shimmer">
+        <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-3">
+          Attendance Comparison Overview
+        </span>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-3 glass-inner rounded-xl space-y-1">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-purple-400 block">Overall (All-Time)</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-extrabold text-white">{overallMetrics.percentage}%</span>
+              <span className="text-[10px] text-zinc-400">({overallMetrics.attended}/{overallMetrics.total})</span>
+            </div>
+            <span className="text-[9px] text-zinc-500 block">
+              {overallMetrics.percentage >= target ? `${overallMetrics.safeBunks} safe skips` : `${overallMetrics.neededLectures} needed`}
+            </span>
+          </div>
+
+          <div className="p-3 glass-inner rounded-xl space-y-1">
+            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 block">This Monthly Cycle</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl font-extrabold text-white">{cycleMetrics.percentage}%</span>
+              <span className="text-[10px] text-zinc-400">({cycleMetrics.attended}/{cycleMetrics.total})</span>
+            </div>
+            <span className="text-[9px] text-zinc-500 block">
+              Starts on Day {settings?.cycleStartDay ?? 1} of month
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* ──── Action Buttons ──── */}
       <div className="grid grid-cols-3 gap-2.5">
