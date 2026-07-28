@@ -31,6 +31,13 @@ export default function App() {
       window.document.documentElement.classList.remove("dark");
     }
     
+    // Register PWA Service Worker
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js").catch((err) => {
+        console.error("SW registration failed:", err);
+      });
+    }
+
     return () => {
       cleanup();
     };

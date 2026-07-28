@@ -230,7 +230,6 @@ export default function Dashboard() {
     records,
     settings,
     overallMetrics,
-    cycleMetrics,
     logAttendance,
     deleteRecord,
     showToast
@@ -246,9 +245,7 @@ export default function Dashboard() {
   const [showInsights, setShowInsights] = useState(false);
   const [showAllLogs, setShowAllLogs] = useState(false);
   const [simLectures, setSimLectures] = useState(5);
-  const [metricView, setMetricView] = useState<"overall" | "cycle">("overall");
-
-  const metrics = metricView === "overall" ? overallMetrics : cycleMetrics;
+  const metrics = overallMetrics;
   const target = settings?.targetPercentage ?? 75;
   const hasRecords = records.length > 0;
 
@@ -430,15 +427,14 @@ export default function Dashboard() {
   const simAttended = overallMetrics.attended + simLectures;
   const simTotal = overallMetrics.total + simLectures;
   const simPercentage = calculatePercentage(simAttended, simTotal);
-
   const getStatusMessage = () => {
     if (metrics.percentage >= target && metrics.safeBunks > 0)
-      return `You can skip ${metrics.safeBunks} more class${metrics.safeBunks > 1 ? "es" : ""} safely 🎉`;
+      return `You're safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""}.`;
     if (metrics.percentage >= target)
-      return "You're on target — keep attending to build buffer 💪";
+      return "On target — attend next class to build buffer.";
     if (metrics.neededLectures > 0 && metrics.neededLectures !== -1)
-      return `Attend ${metrics.neededLectures} more to hit ${target}% 📚`;
-    return "Keep attending classes to recover your attendance 🔴";
+      return `Attend next ${metrics.neededLectures} classes to hit ${target}%.`;
+    return "Attend next classes to recover attendance.";
   };
 
   const recentRecords = showAllLogs ? records.slice().reverse() : records.slice().reverse().slice(0, 5);
@@ -458,7 +454,7 @@ export default function Dashboard() {
     alerts.push({
       id: "daily-log",
       type: "warning",
-      message: "You haven't logged your attendance for today yet.",
+      message: "Today's attendance is pending.",
       icon: <Bell className="w-4 h-4 text-purple-400" />,
       action: (
         <div className="flex gap-2 mt-2">
@@ -484,8 +480,8 @@ export default function Dashboard() {
     alerts.push({
       id: "safe-skips",
       type: "success",
-      message: `You can bunk ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""} safely without dropping below your target! 🎉`,
-      icon: <CheckCircle2 className="w-4 h-4 text-green-400" />
+      message: `You're safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""} without dropping below ${target}%.`,
+      icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
     });
   }
 
@@ -494,8 +490,8 @@ export default function Dashboard() {
     alerts.push({
       id: "warning-bunk",
       type: "warning",
-      message: `You are below your ${target}% target. Attend the next ${metrics.neededLectures} classes consecutively to recover. 🔴`,
-      icon: <AlertTriangle className="w-4 h-4 text-red-400" />
+      message: `Below target (${metrics.percentage}%). Attend next ${metrics.neededLectures} classes to recover.`,
+      icon: <AlertTriangle className="w-4 h-4 text-rose-400" />
     });
   }
 
@@ -504,29 +500,21 @@ export default function Dashboard() {
     alerts.push({
       id: "streak",
       type: "streak",
-      message: `You are on a ${streaks.current}-day active attendance streak! Keep the fire burning 🔥`,
+      message: `${streaks.current}-day attendance streak active! 🔥`,
       icon: <Flame className="w-4 h-4 text-amber-500" />
     });
   }
 
-  // 5. Target Alert (No safe skips left but on track)
-  if (metrics.percentage >= target && metrics.safeBunks === 0) {
-    alerts.push({
-      id: "target-border",
-      type: "info",
-      message: `You are on track but have no safe skips left. Log today to build buffer.`,
-      icon: <Zap className="w-4 h-4 text-amber-400" />
-    });
-  }
-
   return (
-    <div className="space-y-5 pb-24">
-      {/* ──── Greeting ──── */}
-      <div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-white leading-none">
-          {getGreetingTime()} 👋
-        </h2>
-        <p className="text-sm text-zinc-500 mt-1">Here&apos;s your attendance overview</p>
+    <div className="space-y-4 pb-24">
+      {/* ──── Compact Header ──── */}
+      <div className="flex items-center justify-between px-1">
+        <span className="text-xs font-semibold text-zinc-400">
+          {getGreetingTime()}
+        </span>
+        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+          Target: {target}%
+        </span>
       </div>
 
       {/* ──── Smart Alerts ──── */}
@@ -536,16 +524,16 @@ export default function Dashboard() {
             {alerts.map((alert) => (
               <motion.div
                 key={alert.id}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="p-4 glass-card rounded-2xl flex items-start gap-3.5 glass-shimmer"
+                exit={{ opacity: 0, y: -6 }}
+                className="p-3.5 glass-card rounded-2xl flex items-start gap-3 glass-shimmer"
                 style={{
-                  border: alert.type === "warning" && alert.id !== "daily-log" 
-                    ? "1px solid rgba(239, 68, 68, 0.15)"
+                  borderColor: alert.type === "warning" && alert.id !== "daily-log" 
+                    ? "rgba(239, 68, 68, 0.2)"
                     : alert.type === "success"
-                      ? "1px solid rgba(16, 185, 129, 0.15)"
-                      : "1px solid rgba(255,255,255,0.06)"
+                      ? "rgba(16, 185, 129, 0.2)"
+                      : "rgba(255,255,255,0.07)"
                 }}
               >
                 <div className="mt-0.5 shrink-0">{alert.icon}</div>
@@ -561,93 +549,53 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* ──── Hero Glass Card ──── */}
+      {/* ──── Hero Decision Card (P1 & P2) ──── */}
       <motion.div
         layout
-        className="relative overflow-hidden w-full glass-card rounded-3xl p-6 flex flex-col items-center text-center glass-shimmer"
+        className="relative overflow-hidden w-full glass-card-hero rounded-3xl p-6 flex flex-col items-center text-center glass-shimmer"
       >
-        {/* Decorative orb */}
-        <div className="absolute -top-16 -right-16 w-48 h-48 bg-purple-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-violet-500/[0.06] blur-[70px] rounded-full pointer-events-none" />
-
-        {/* View Mode Toggle */}
-        <div className="flex items-center p-1 bg-white/[0.04] border border-white/[0.06] rounded-xl mb-5 relative z-10">
-          <button
-            type="button"
-            onClick={() => setMetricView("overall")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              metricView === "overall"
-                ? "bg-purple-600 text-white shadow-md"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Overall Attendance
-          </button>
-          <button
-            type="button"
-            onClick={() => setMetricView("cycle")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-              metricView === "cycle"
-                ? "bg-purple-600 text-white shadow-md"
-                : "text-zinc-400 hover:text-white"
-            }`}
-          >
-            Monthly Cycle
-          </button>
+        {/* Instant Bunk Decision Banner */}
+        <div className="mb-4">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
+            metrics.percentage >= target && metrics.safeBunks > 0
+              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+              : metrics.percentage >= target
+                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
+          }`}>
+            {metrics.percentage >= target && metrics.safeBunks > 0
+              ? `🟢 Safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""}`
+              : metrics.percentage >= target
+                ? "⚠️ On target — no free bunks"
+                : `🔴 Attend next ${metrics.neededLectures} classes`}
+          </span>
         </div>
 
+        {/* Attendance % Ring */}
         <ProgressRing percentage={metrics.percentage} target={target} />
 
-        <p className="mt-4 text-sm font-semibold text-zinc-300 max-w-xs relative z-10">
+        <p className="mt-4 text-xs font-semibold text-zinc-300 max-w-xs relative z-10">
           {getStatusMessage()}
         </p>
 
         {/* Stats row */}
-        <div className="w-full max-w-xs mt-5 pt-4 border-t border-white/[0.05] grid grid-cols-3 gap-2 text-center relative z-10">
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">Attended</span>
-            <span className="text-lg font-extrabold text-white">{metrics.attended}</span>
-          </div>
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">Total</span>
-            <span className="text-lg font-extrabold text-white">{metrics.total}</span>
-          </div>
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">Target</span>
-            <span className="text-lg font-extrabold text-purple-400">{target}%</span>
+        <div className="w-full max-w-xs mt-4 pt-4 border-t border-white/5 space-y-3 relative z-10">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 glass-inner rounded-xl">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Attended</span>
+              <span className="text-base font-extrabold text-white">{metrics.attended}</span>
+            </div>
+            <div className="p-2 glass-inner rounded-xl">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Total</span>
+              <span className="text-base font-extrabold text-white">{metrics.total}</span>
+            </div>
+            <div className="p-2 glass-inner rounded-xl">
+              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Target</span>
+              <span className="text-base font-extrabold text-purple-400">{target}%</span>
+            </div>
           </div>
         </div>
       </motion.div>
-
-      {/* ──── Overall vs Monthly Attendance Summary ──── */}
-      <div className="glass-card rounded-2xl p-4 glass-shimmer">
-        <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-3">
-          Attendance Comparison Overview
-        </span>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="p-3 glass-inner rounded-xl space-y-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-purple-400 block">Overall (All-Time)</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-white">{overallMetrics.percentage}%</span>
-              <span className="text-[10px] text-zinc-400">({overallMetrics.attended}/{overallMetrics.total})</span>
-            </div>
-            <span className="text-[9px] text-zinc-500 block">
-              {overallMetrics.percentage >= target ? `${overallMetrics.safeBunks} safe skips` : `${overallMetrics.neededLectures} needed`}
-            </span>
-          </div>
-
-          <div className="p-3 glass-inner rounded-xl space-y-1">
-            <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 block">This Monthly Cycle</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold text-white">{cycleMetrics.percentage}%</span>
-              <span className="text-[10px] text-zinc-400">({cycleMetrics.attended}/{cycleMetrics.total})</span>
-            </div>
-            <span className="text-[9px] text-zinc-500 block">
-              Starts on Day {settings?.cycleStartDay ?? 1} of month
-            </span>
-          </div>
-        </div>
-      </div>
 
       {/* ──── Action Buttons ──── */}
       <div className="grid grid-cols-3 gap-2.5">
@@ -687,38 +635,33 @@ export default function Dashboard() {
 
       {/* ──── Status Cards ──── */}
       <div className="grid grid-cols-2 gap-3">
-        <div className={`rounded-2xl p-4 glass-shimmer ${
-          metrics.percentage >= target
-            ? "glass-card" : "glass-card"
-        }`}
+        <div className="rounded-2xl p-4 glass-card glass-shimmer"
           style={metrics.percentage >= target ? {
-            background: "linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(18, 18, 26, 0.55))",
-            border: "1px solid rgba(16, 185, 129, 0.15)"
+            background: "rgba(16, 185, 129, 0.05)",
+            borderColor: "rgba(16, 185, 129, 0.2)"
           } : undefined}
         >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">Safe Skips</span>
-          <span className={`text-2xl font-extrabold block ${metrics.safeBunks > 0 ? "text-green-400" : "text-zinc-600"}`}>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">Safe Skips</span>
+          <span className={`text-2xl font-extrabold block ${metrics.safeBunks > 0 ? "text-emerald-400" : "text-zinc-500"}`}>
             {metrics.safeBunks}
           </span>
-          <span className="text-[10px] text-zinc-500">
-            {metrics.safeBunks > 0 ? "classes you can skip" : "no free skips"}
+          <span className="text-[10px] text-zinc-400">
+            {metrics.safeBunks > 0 ? "safe skips buffer" : "no free skips"}
           </span>
         </div>
 
-        <div className={`rounded-2xl p-4 glass-shimmer ${
-          metrics.percentage < target ? "glass-card" : "glass-card"
-        }`}
+        <div className="rounded-2xl p-4 glass-card glass-shimmer"
           style={metrics.percentage < target ? {
-            background: "linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(18, 18, 26, 0.55))",
-            border: "1px solid rgba(239, 68, 68, 0.15)"
+            background: "rgba(239, 68, 68, 0.05)",
+            borderColor: "rgba(239, 68, 68, 0.2)"
           } : undefined}
         >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block mb-1">Need to Attend</span>
-          <span className={`text-2xl font-extrabold block ${metrics.neededLectures > 0 ? "text-red-400" : "text-zinc-600"}`}>
+          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">Attend Next</span>
+          <span className={`text-2xl font-extrabold block ${metrics.neededLectures > 0 ? "text-rose-400" : "text-zinc-500"}`}>
             {metrics.neededLectures === -1 ? "∞" : metrics.neededLectures}
           </span>
-          <span className="text-[10px] text-zinc-500">
-            {metrics.neededLectures > 0 ? "to reach target" : "you're on track!"}
+          <span className="text-[10px] text-zinc-400">
+            {metrics.neededLectures > 0 ? "consecutive classes" : "target achieved!"}
           </span>
         </div>
       </div>

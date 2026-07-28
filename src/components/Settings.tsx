@@ -16,8 +16,10 @@ import {
   XCircle,
   HelpCircle,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Bell
 } from "lucide-react";
+import { requestNotificationPermission, sendAttendancePushNotification } from "../lib/pwaNotifications";
 
 export default function Settings() {
   const { settings, updateSettings, clearAllAttendance, showToast } = useStore();
@@ -166,6 +168,25 @@ export default function Settings() {
                   <Target className="w-3.5 h-3.5 text-purple-400" />
                   <span>Target Attendance %</span>
                 </label>
+                
+                {/* Segmented Quick Pickers */}
+                <div className="grid grid-cols-4 gap-2 mb-2.5">
+                  {["75", "80", "85", "90"].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setTargetPercentage(val)}
+                      className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                        targetPercentage === val
+                          ? "bg-purple-600 text-white border-purple-500 shadow-sm"
+                          : "bg-white/[0.03] text-zinc-400 border-white/5 hover:text-white"
+                      }`}
+                    >
+                      {val}%
+                    </button>
+                  ))}
+                </div>
+
                 <div className="relative">
                   <input
                     type="number"
@@ -174,12 +195,13 @@ export default function Settings() {
                     required
                     value={targetPercentage}
                     onChange={(e) => setTargetPercentage(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass-input text-white text-sm font-semibold focus:outline-none"
+                    className="w-full px-4 py-2.5 rounded-xl glass-input text-white text-sm font-semibold focus:outline-none"
+                    placeholder="Custom Target"
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-bold">%</span>
                 </div>
                 <p className="text-[10px] text-zinc-500 mt-2 pl-1 leading-relaxed">
-                  Used to calculate safe bunks and lectures needed
+                  Most Indian colleges enforce 75% or 80% minimum attendance.
                 </p>
               </div>
 
@@ -196,10 +218,10 @@ export default function Settings() {
                   required
                   value={cycleStartDay}
                   onChange={(e) => setCycleStartDay(e.target.value)}
-                  className="w-full px-4 py-3 rounded-lg glass-input text-white text-sm font-semibold focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl glass-input text-white text-sm font-semibold focus:outline-none"
                 />
                 <p className="text-[10px] text-zinc-500 mt-2 pl-1 leading-relaxed">
-                  Monthly cycle start (1-28). Defines your attendance cycle
+                  Monthly cycle start day (1–28) for reset tracking.
                 </p>
               </div>
             </div>
@@ -282,6 +304,38 @@ export default function Settings() {
           <h3 className="text-base font-bold text-white mb-4">
             Application
           </h3>
+
+          {/* Push Notifications */}
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            className="flex items-center justify-between p-4 glass-inner rounded-2xl cursor-pointer hover:bg-white/[0.02] transition-all mb-3.5"
+            onClick={async () => {
+              const perm = await requestNotificationPermission();
+              if (perm === "granted") {
+                showToast("Notifications enabled! 🔔", "success");
+                sendAttendancePushNotification({
+                  percentage: parseInt(targetPercentage) || 75,
+                  target: parseInt(targetPercentage) || 75,
+                  safeBunks: 2,
+                  neededLectures: 0
+                });
+              } else {
+                showToast("Permission denied.", "error");
+              }
+            }}
+          >
+            <div className="space-y-1">
+              <span className="text-xs font-bold text-white block">Push Notifications</span>
+              <p className="text-[10px] text-zinc-500">Alert me when buffer changes</p>
+            </div>
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="p-2 glass-button-brand rounded-xl text-white"
+            >
+              <Bell className="w-4 h-4" />
+            </motion.div>
+          </motion.div>
 
           {/* Theme Toggle */}
           <motion.div

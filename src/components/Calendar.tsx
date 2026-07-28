@@ -186,31 +186,31 @@ export default function Calendar() {
               const record = records.find(r => r.id === docId);
               const isToday = new Date().toDateString() === date.toDateString();
 
-              let bgClass = "bg-white/[0.02] hover:bg-purple-500/[0.06] hover:text-purple-400";
+              let bgClass = "bg-white/[0.02] hover:bg-purple-500/10 hover:text-purple-300";
               let textClass = "text-zinc-300";
-              let borderClass = "border border-white/[0.05]";
+              let borderClass = "border border-white/5";
 
               if (record) {
                 if (record.isHoliday) {
-                  bgClass = "bg-amber-500/[0.08] hover:bg-amber-500/[0.12]";
-                  textClass = "text-amber-400 font-bold";
-                  borderClass = "border border-amber-500/[0.15]";
+                  bgClass = "bg-amber-500/15 hover:bg-amber-500/20";
+                  textClass = "text-amber-300 font-bold";
+                  borderClass = "border border-amber-500/30";
                 } else {
                   const ratio = record.totalLectures > 0 ? record.attendedLectures / record.totalLectures : 0;
                   if (ratio >= 0.75) {
-                    bgClass = "bg-green-500/[0.08] hover:bg-green-500/[0.12]";
-                    textClass = "text-green-400 font-bold";
-                    borderClass = "border border-green-500/[0.15]";
+                    bgClass = "bg-emerald-500/15 hover:bg-emerald-500/20";
+                    textClass = "text-emerald-400 font-bold";
+                    borderClass = "border border-emerald-500/30";
                   } else if (record.totalLectures > 0) {
-                    bgClass = "bg-red-500/[0.08] hover:bg-red-500/[0.12]";
-                    textClass = "text-red-400 font-bold";
-                    borderClass = "border border-red-500/[0.15]";
+                    bgClass = "bg-rose-500/15 hover:bg-rose-500/20";
+                    textClass = "text-rose-400 font-bold";
+                    borderClass = "border border-rose-500/30";
                   }
                 }
               }
 
               if (isToday) {
-                borderClass = "border-2 border-purple-500/60 shadow-[0_0_16px_rgba(139,92,246,0.2)]";
+                borderClass = "border-2 border-purple-500 ring-2 ring-purple-500/20";
               }
 
               return (
