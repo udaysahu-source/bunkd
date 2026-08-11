@@ -6,6 +6,8 @@ export interface AttendanceRecord {
   totalLectures: number;
   attendedLectures: number;
   isHoliday: boolean;
+  type?: "baseline" | "daily";
+  semester?: number;
 }
 
 export interface AttendanceMetrics {
@@ -128,3 +130,56 @@ export function calculateMetrics(records: AttendanceRecord[], targetPercentage: 
     neededLectures: calculateNeededLectures(attended, total, targetPercentage),
   };
 }
+
+/**
+ * Calculates the user's historical average total lectures for a specific day of the week.
+ * Looks back at the past 21 days first, falling back to all history or defaults.
+ */
+export function getHistoricalAverageLectures(records: AttendanceRecord[], date: Date): number {
+  const dayOfWeek = date.getDay();
+  const threeWeeksAgo = Date.now() - 21 * 24 * 60 * 60 * 1000;
+  
+  // 1. Filter non-holiday logged entries for the same day of the week in the past 21 days
+  const matchingRecords = records.filter(r => {
+    if (r.isHoliday || r.totalLectures === 0) return false;
+    const rDate = new Date(r.dateTimestamp);
+    return rDate.getDay() === dayOfWeek && r.dateTimestamp >= threeWeeksAgo;
+  });
+  
+  if (matchingRecords.length > 0) {
+    const sum = matchingRecords.reduce((acc, r) => acc + r.totalLectures, 0);
+    return Math.round(sum / matchingRecords.length);
+  }
+  
+  // 2. Fallback: search all records for that day of the week regardless of 21 days limit
+  const allMatching = records.filter(r => {
+    if (r.isHoliday || r.totalLectures === 0) return false;
+    return new Date(r.dateTimestamp).getDay() === dayOfWeek;
+  });
+  
+  if (allMatching.length > 0) {
+    const sum = allMatching.reduce((acc, r) => acc + r.totalLectures, 0);
+    return Math.round(sum / allMatching.length);
+  }
+  
+  // 3. Fallback: overall average total lectures for any non-holiday logged day
+  const activeRecords = records.filter(r => !r.isHoliday && r.totalLectures > 0);
+  if (activeRecords.length > 0) {
+    const sum = activeRecords.reduce((acc, r) => acc + r.totalLectures, 0);
+    return Math.round(sum / activeRecords.length);
+  }
+  
+  return 4; // Absolute default
+}
+
+/**
+ * Computes the user's average number of lectures per daily schedule.
+ * Based on non-holiday historical records, falling back to 4.
+ */
+export function getAverageDailyLectures(records: AttendanceRecord[]): number {
+  const activeDays = records.filter(r => !r.isHoliday && r.totalLectures > 0);
+  if (activeDays.length === 0) return 4; // fallback default
+  const sum = activeDays.reduce((acc, r) => acc + r.totalLectures, 0);
+  return Math.max(1, Math.round(sum / activeDays.length));
+}
+

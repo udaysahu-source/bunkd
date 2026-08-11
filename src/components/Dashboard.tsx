@@ -1,152 +1,28 @@
 "use client";
 // File: src/components/Dashboard.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useStore, dateToDocId } from "../store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
-  Trash2,
+  Minus,
   CheckCircle2,
   XCircle,
-  BookOpen,
   Zap,
-  Flame,
   ChevronDown,
-  BarChart3,
   Bell,
-  AlertTriangle
+  AlertTriangle,
+  Calendar,
+  Sparkles,
+  HelpCircle
 } from "lucide-react";
-import { calculatePercentage, calculateSafeBunks } from "../lib/attendanceMath";
-
-// ──── Onboarding State ────
-function OnboardingState({
-  logAttendance,
-  showToast
-}: {
-  logAttendance: (date: Date, attended: number, total: number, isHoliday: boolean) => Promise<void>;
-  showToast: (msg: string, type: "success" | "error" | "info") => void;
-}) {
-  const [attended, setAttended] = useState("1");
-  const [total, setTotal] = useState("1");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    const attVal = parseInt(attended);
-    const totVal = parseInt(total);
-
-    if (isNaN(attVal) || isNaN(totVal)) {
-      setError("Please enter valid numbers");
-      return;
-    }
-    if (attVal < 0 || totVal < 0) {
-      setError("Lectures cannot be negative");
-      return;
-    }
-    if (attVal > totVal) {
-      setError("Attended lectures cannot exceed total lectures");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      await logAttendance(new Date(), attVal, totVal, false);
-      showToast("First class logged! Welcome to Bunkd 🚀", "success");
-    } catch (err) {
-      const errorMsg = (err as Error).message || "Failed to log attendance";
-      setError(errorMsg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
-      className="p-6 glass-card rounded-3xl relative overflow-hidden glass-shimmer"
-    >
-      {/* Decorative glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/[0.08] blur-[80px] rounded-full pointer-events-none" />
-      
-      <div className="flex justify-center mb-6 relative z-10">
-        <motion.div
-          animate={{ y: [0, -8, 0] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="w-20 h-20 glass-inner rounded-2xl flex items-center justify-center glow-purple"
-        >
-          <BookOpen className="w-10 h-10 text-purple-400" />
-        </motion.div>
-      </div>
-      
-      <h2 className="text-2xl font-extrabold text-white mb-2 tracking-tight text-center relative z-10">
-        Log Your First Class
-      </h2>
-      <p className="text-zinc-400 text-sm leading-relaxed max-w-xs mx-auto mb-6 text-center relative z-10">
-        Enter your current attendance to get started. We will calculate your target progress and safe bunks instantly.
-      </p>
-
-      <form onSubmit={handleSubmit} className="space-y-4 max-w-xs mx-auto relative z-10">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Attended</label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={attended}
-              onChange={(e) => setAttended(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">Total</label>
-            <input
-              type="number"
-              min="0"
-              required
-              value={total}
-              onChange={(e) => setTotal(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
-            />
-          </div>
-        </div>
-
-        {error && (
-          <div className="text-[11px] font-medium text-red-400 p-2.5 rounded-lg flex items-center gap-2 bg-red-500/10 border border-red-500/20">
-            <XCircle className="w-3.5 h-3.5 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <motion.button
-          type="submit"
-          disabled={loading}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full py-3.5 glass-button-brand text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer text-base disabled:opacity-50"
-        >
-          {loading ? (
-            <span>Logging...</span>
-          ) : (
-            <>
-              <Plus className="w-5 h-5" />
-              <span>Log Class</span>
-            </>
-          )}
-        </motion.button>
-      </form>
-    </motion.div>
-  );
-}
+import { calculatePercentage, calculateSafeBunks, getHistoricalAverageLectures, getAverageDailyLectures } from "../lib/attendanceMath";
+import OnboardingWizard from "./OnboardingWizard";
 
 // ──── Progress Ring ────
 function ProgressRing({ percentage, target }: { percentage: number; target: number }) {
-  const radius = 80;
-  const stroke = 7;
+  const radius = 64;
+  const stroke = 6;
   const normalizedRadius = radius - stroke * 2;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (Math.min(100, percentage) / 100) * circumference;
@@ -155,7 +31,7 @@ function ProgressRing({ percentage, target }: { percentage: number; target: numb
   const trackColor = isOnTrack ? "#10B981" : "#EF4444";
 
   return (
-    <div className="relative flex items-center justify-center select-none">
+    <div className="relative flex items-center justify-center select-none shrink-0">
       {/* Glow ring behind */}
       <div 
         className="absolute rounded-full"
@@ -163,37 +39,35 @@ function ProgressRing({ percentage, target }: { percentage: number; target: numb
           width: radius * 2 - 12,
           height: radius * 2 - 12,
           boxShadow: isOnTrack 
-            ? "0 0 40px rgba(16, 185, 129, 0.12), 0 0 80px rgba(16, 185, 129, 0.06)"
-            : "0 0 40px rgba(239, 68, 68, 0.12), 0 0 80px rgba(239, 68, 68, 0.06)"
+            ? "0 0 30px rgba(16, 185, 129, 0.08)"
+            : "0 0 30px rgba(239, 68, 68, 0.08)"
         }}
       />
       
       <svg height={radius * 2} width={radius * 2} className="rotate-[-90deg]">
-        {/* Background track */}
         <circle
-          stroke="rgba(255,255,255,0.05)"
+          stroke="rgba(0,0,0,0.03)"
           fill="transparent"
           strokeWidth={stroke}
           r={normalizedRadius}
           cx={radius}
           cy={radius}
+          className="dark:stroke-white/5"
         />
-        {/* Glow layer */}
         <motion.circle
           stroke={trackColor}
           fill="transparent"
-          strokeWidth={stroke + 4}
+          strokeWidth={stroke + 2}
           strokeDasharray={circumference + " " + circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
+          transition={{ duration: 1.0, ease: "easeOut" }}
           r={normalizedRadius}
           cx={radius}
           cy={radius}
           strokeLinecap="round"
-          className="opacity-15 blur-[6px]"
+          className="opacity-15 blur-[4px]"
         />
-        {/* Main progress */}
         <motion.circle
           stroke={trackColor}
           fill="transparent"
@@ -201,7 +75,7 @@ function ProgressRing({ percentage, target }: { percentage: number; target: numb
           strokeDasharray={circumference + " " + circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
+          transition={{ duration: 1.0, ease: "easeOut" }}
           r={normalizedRadius}
           cx={radius}
           cy={radius}
@@ -210,15 +84,15 @@ function ProgressRing({ percentage, target }: { percentage: number; target: numb
       </svg>
       
       <div className="absolute flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-extrabold tracking-tighter text-white">
+        <span className="text-xl font-extrabold tracking-tighter text-zinc-800 dark:text-white">
           {percentage}%
         </span>
-        <span className={`text-[9px] font-bold uppercase tracking-widest mt-1 px-2.5 py-0.5 rounded-full backdrop-blur-sm ${
+        <span className={`text-xs font-extrabold uppercase tracking-widest px-1.5 py-0.5 rounded-full backdrop-blur-sm scale-90 ${
           isOnTrack 
-            ? "bg-green-500/10 text-green-400 border border-green-500/20" 
-            : "bg-red-500/10 text-red-400 border border-red-500/20"
+            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20" 
+            : "bg-red-500/10 text-red-700 dark:text-red-400 border border-red-500/20"
         }`}>
-          {isOnTrack ? "On Track" : "Below Target"}
+          {isOnTrack ? "Track" : "Below"}
         </span>
       </div>
     </div>
@@ -231,7 +105,6 @@ export default function Dashboard() {
     settings,
     overallMetrics,
     logAttendance,
-    deleteRecord,
     showToast
   } = useStore();
 
@@ -241,13 +114,33 @@ export default function Dashboard() {
   const [total, setTotal] = useState("1");
   const [isHoliday, setIsHoliday] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  
-  const [showInsights, setShowInsights] = useState(false);
-  const [showAllLogs, setShowAllLogs] = useState(false);
-  const [simLectures, setSimLectures] = useState(5);
+
+  // Home simulator state (bunk hypothetical future classes)
+  const [bunkSimCount, setBunkSimCount] = useState(1);
+
+  // Micro tour guide state
+  const [tourStep, setTourStep] = useState<number | null>(null);
+
+  const modalSaveBtnRef = useRef<HTMLDivElement>(null);
+
   const metrics = overallMetrics;
   const target = settings?.targetPercentage ?? 75;
   const hasRecords = records.length > 0;
+
+  // Check tour completion status on mount/records load
+  useEffect(() => {
+    if (hasRecords) {
+      const tourCompleted = localStorage.getItem("bunkd_tour_completed");
+      if (!tourCompleted) {
+        setTourStep(1);
+      }
+    }
+  }, [hasRecords]);
+
+  const handleDismissTour = () => {
+    localStorage.setItem("bunkd_tour_completed", "true");
+    setTourStep(null);
+  };
 
   const handleOpenModal = () => {
     setLogDate(new Date().toISOString().split("T")[0]);
@@ -263,56 +156,80 @@ export default function Dashboard() {
     setValidationError(null);
     const attVal = isHoliday ? 0 : parseInt(attended);
     const totVal = isHoliday ? 0 : parseInt(total);
+
     if (!isHoliday) {
       if (isNaN(attVal) || isNaN(totVal)) { setValidationError("Please enter valid numbers"); return; }
       if (attVal < 0 || totVal < 0) { setValidationError("Lectures cannot be negative"); return; }
       if (attVal > totVal) { setValidationError("Attended can't exceed total"); return; }
     }
+
     try {
       await logAttendance(new Date(logDate), attVal, totVal, isHoliday);
       setShowLogModal(false);
-      showToast("Attendance logged! ✅", "success");
+      showToast("Attendance logged successfully!", "success");
     } catch (err) {
       const error = err as Error;
       setValidationError(error.message || "Failed to log attendance");
     }
   };
 
-  const handleQuickAddAttended = async () => {
-    const today = new Date();
-    const docId = dateToDocId(today);
-    const existing = records.find(r => r.id === docId);
-    let attVal = 1, totVal = 1;
-    if (existing) {
-      if (existing.isHoliday) { showToast("Today is marked as holiday.", "error"); return; }
-      attVal = existing.attendedLectures + 1;
-      totVal = existing.totalLectures + 1;
-    }
-    try {
-      await logAttendance(today, attVal, totVal, false);
-      showToast("+1 class logged! ⚡", "success");
-    } catch { showToast("Failed to log class.", "error"); }
+  // Keyboard scroll assistance for custom modal
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 150);
   };
 
-  const handleQuickAddBunk = async () => {
+  // Today calculations
+  const todayDocId = dateToDocId(new Date());
+  const todayRecord = records.find(r => r.id === todayDocId);
+
+  // Slot selection calculations
+  const defaultTotal = getHistoricalAverageLectures(records, new Date());
+  const currentTotal = todayRecord ? todayRecord.totalLectures : defaultTotal;
+  const currentAttended = todayRecord ? todayRecord.attendedLectures : 0;
+
+  const handleIncreaseSlots = async () => {
     const today = new Date();
-    const docId = dateToDocId(today);
-    const existing = records.find(r => r.id === docId);
-    let attVal = 0, totVal = 1;
-    if (existing) {
-      if (existing.isHoliday) { showToast("Today is marked as holiday.", "error"); return; }
-      attVal = existing.attendedLectures;
-      totVal = existing.totalLectures + 1;
-    }
+    const newTotal = currentTotal + 1;
     try {
-      await logAttendance(today, attVal, totVal, false);
-      showToast("Bunk logged! 🚫", "info");
-    } catch { showToast("Failed to log bunk.", "error"); }
+      await logAttendance(today, currentAttended, newTotal, false);
+      showToast(`Schedule expanded to ${newTotal} slots`, "success");
+    } catch {
+      showToast("Failed to update slots.", "error");
+    }
   };
 
-  const formatDateString = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
+  const handleDecreaseSlots = async () => {
+    if (currentTotal <= 1) return;
+    const today = new Date();
+    const newTotal = currentTotal - 1;
+    const newAtt = Math.min(currentAttended, newTotal);
+    try {
+      await logAttendance(today, newAtt, newTotal, false);
+      showToast(`Schedule shrunk to ${newTotal} slots`, "success");
+    } catch {
+      showToast("Failed to update slots.", "error");
+    }
+  };
+
+  const handleSelectAttended = async (slotsAttended: number) => {
+    const today = new Date();
+    try {
+      await logAttendance(today, slotsAttended, currentTotal, false);
+      const newSafe = calculateSafeBunks(
+        overallMetrics.attended - currentAttended + slotsAttended,
+        overallMetrics.total,
+        target
+      );
+      if (newSafe >= 0) {
+        showToast(`Attendance saved · ${newSafe} safe skips remaining`, "success");
+      } else {
+        showToast(`Attendance saved · Below target limit`, "info");
+      }
+    } catch {
+      showToast("Failed to save attendance.", "error");
+    }
   };
 
   const getGreetingTime = () => {
@@ -322,551 +239,387 @@ export default function Dashboard() {
     return "Good Evening";
   };
 
-  const calculateStreaks = () => {
-    const activeTimestamps = Array.from(new Set(
-      records.filter(r => !r.isHoliday && r.totalLectures > 0)
-        .map(r => { const d = new Date(r.dateTimestamp); d.setHours(0,0,0,0); return d.getTime(); })
-    )).sort((a, b) => a - b);
-    if (activeTimestamps.length === 0) return { current: 0, longest: 0 };
-    let longest = 0, tempStreak = 0, prevTimestamp: number | null = null;
-    const ONE_DAY_MS = 86400000;
-    for (let i = 0; i < activeTimestamps.length; i++) {
-      const curr = activeTimestamps[i];
-      if (prevTimestamp === null) { tempStreak = 1; }
-      else if (curr - prevTimestamp <= ONE_DAY_MS + 7200000) { tempStreak++; }
-      else { if (tempStreak > longest) longest = tempStreak; tempStreak = 1; }
-      prevTimestamp = curr;
-    }
-    if (tempStreak > longest) longest = tempStreak;
-    const lastActive = activeTimestamps[activeTimestamps.length - 1];
-    const todayMidnight = new Date(); todayMidnight.setHours(0,0,0,0);
-    const current = todayMidnight.getTime() - lastActive <= ONE_DAY_MS * 1.5 ? tempStreak : 0;
-    return { current, longest };
-  };
-
-  const streaks = calculateStreaks();
-
-  // SVG Chart
-  const renderSVGChart = () => {
-    const filteredRecords = records.filter(r => !r.isHoliday);
-    if (filteredRecords.length < 2) {
-      return (
-        <div className="h-24 flex items-center justify-center glass-inner rounded-2xl text-xs text-zinc-500 font-semibold">
-          Log at least 2 active days to see trends.
-        </div>
-      );
-    }
-    let runningAtt = 0, runningTot = 0;
-    const points = filteredRecords.map(r => {
-      runningAtt += r.attendedLectures; runningTot += r.totalLectures;
-      return calculatePercentage(runningAtt, runningTot);
-    });
-    const width = 500, height = 100, px = 15, py = 15;
-    const minVal = Math.max(0, Math.min(...points, target) - 10);
-    const maxVal = Math.min(100, Math.max(...points, 100));
-    const range = maxVal - minVal || 1;
-    const coords = points.map((val, idx) => ({
-      x: px + (idx / (points.length - 1)) * (width - px * 2),
-      y: height - py - ((val - minVal) / range) * (height - py * 2), val
-    }));
-    const dPath = `M ${coords.map(p => `${p.x},${p.y}`).join(" L ")}`;
-    const fillPath = `${dPath} L ${coords[coords.length - 1].x},${height - py} L ${coords[0].x},${height - py} Z`;
-    const targetY = height - py - ((target - minVal) / range) * (height - py * 2);
-
-    return (
-      <div className="space-y-2">
-        <div className="relative w-full aspect-[500/100] glass-inner rounded-2xl p-1 overflow-hidden">
-          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible">
-            <defs>
-              <linearGradient id="chart-area-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#8B5CF6" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="#8B5CF6" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            {targetY >= py && targetY <= height - py && (
-              <line x1={px} y1={targetY} x2={width - px} y2={targetY}
-                stroke="#8B5CF6" strokeWidth="1.5" strokeDasharray="4 4" className="opacity-40" />
-            )}
-            <path d={fillPath} fill="url(#chart-area-grad)" />
-            <path d={dPath} fill="none" stroke="#8B5CF6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            {coords.length > 0 && (
-              <>
-                <circle cx={coords[coords.length - 1].x} cy={coords[coords.length - 1].y} r="6" fill="#8B5CF6" className="opacity-25" />
-                <circle cx={coords[coords.length - 1].x} cy={coords[coords.length - 1].y} r="3.5" fill="#8B5CF6" />
-              </>
-            )}
-          </svg>
-        </div>
-        <div className="flex justify-between text-[9px] text-zinc-500 font-bold px-1 uppercase tracking-wider">
-          <span>First</span>
-          <span className="text-purple-400">Target ({target}%)</span>
-          <span>Now ({metrics.percentage}%)</span>
-        </div>
-      </div>
-    );
-  };
-
-  // ──── EMPTY STATE ────
+  // Onboarding Wizard Empty State
   if (!hasRecords) {
     return (
-      <div className="space-y-8 pb-24">
+      <div className="space-y-6 pb-24">
         <div>
-          <h2 className="text-2xl font-extrabold tracking-tight text-white">
+          <h2 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-none">
             {getGreetingTime()} 👋
           </h2>
-          <p className="text-zinc-500 text-sm mt-1">Start tracking to see your stats</p>
+          <p className="text-zinc-550 dark:text-zinc-500 text-sm mt-1">Start tracking to configure your status</p>
         </div>
-        <OnboardingState logAttendance={logAttendance} showToast={showToast} />
+        <OnboardingWizard onComplete={() => showToast("Setup completed successfully! ⚡", "success")} />
       </div>
     );
   }
 
-  // Pre-calculate
-  const percentageAfterSkip = calculatePercentage(overallMetrics.attended, overallMetrics.total + 1);
-  const safeBunksAfterSkip = calculateSafeBunks(overallMetrics.attended, overallMetrics.total + 1, target);
-  const simAttended = overallMetrics.attended + simLectures;
-  const simTotal = overallMetrics.total + simLectures;
-  const simPercentage = calculatePercentage(simAttended, simTotal);
-  const getStatusMessage = () => {
-    if (metrics.percentage >= target && metrics.safeBunks > 0)
-      return `You're safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""}.`;
-    if (metrics.percentage >= target)
-      return "On target — attend next class to build buffer.";
-    if (metrics.neededLectures > 0 && metrics.neededLectures !== -1)
-      return `Attend next ${metrics.neededLectures} classes to hit ${target}%.`;
-    return "Attend next classes to recover attendance.";
+  // Pre-calculations for simulator
+  const percentageAfterBunk = calculatePercentage(overallMetrics.attended, overallMetrics.total + bunkSimCount);
+  const isSimulationSafe = percentageAfterBunk >= target;
+
+  // Consolidated card metrics
+  const nextAttPercent = calculatePercentage(metrics.attended + 1, metrics.total + 1);
+  const nextBunkPercent = calculatePercentage(metrics.attended, metrics.total + 1);
+  const isSafeState = metrics.percentage >= target && metrics.safeBunks > 0;
+  const isNearLimitState = metrics.percentage >= target && metrics.safeBunks === 0;
+
+  const avgDaily = getAverageDailyLectures(records);
+  const fullDaysOff = metrics.safeBunks > 0 ? Math.floor(metrics.safeBunks / avgDaily) : 0;
+  const extraSkips = metrics.safeBunks > 0 ? metrics.safeBunks % avgDaily : 0;
+
+  const getStatusBannerColor = () => {
+    if (isSafeState) return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20";
+    if (isNearLimitState) return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20";
+    return "bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/20";
   };
 
-  const recentRecords = showAllLogs ? records.slice().reverse() : records.slice().reverse().slice(0, 5);
-
-  const todayDocId = dateToDocId(new Date());
-  const isTodayLogged = records.some(r => r.id === todayDocId);
-  const alerts: {
-    id: string;
-    type: "info" | "warning" | "success" | "streak";
-    message: string;
-    icon: React.ReactNode;
-    action?: React.ReactNode;
-  }[] = [];
-
-  // 1. Daily Attendance Alert
-  if (!isTodayLogged) {
-    alerts.push({
-      id: "daily-log",
-      type: "warning",
-      message: "Today's attendance is pending.",
-      icon: <Bell className="w-4 h-4 text-purple-400" />,
-      action: (
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={handleQuickAddAttended}
-            className="px-3 py-1 text-xs font-bold rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-colors cursor-pointer"
-          >
-            Attended
-          </button>
-          <button
-            onClick={handleQuickAddBunk}
-            className="px-3 py-1 text-xs font-bold rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-colors cursor-pointer"
-          >
-            Bunked
-          </button>
-        </div>
-      )
-    });
-  }
-
-  // 2. Safe Skips Alert
-  if (metrics.percentage >= target && metrics.safeBunks > 0) {
-    alerts.push({
-      id: "safe-skips",
-      type: "success",
-      message: `You're safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""} without dropping below ${target}%.`,
-      icon: <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-    });
-  }
-
-  // 3. Below Target Warning Alert
-  if (metrics.percentage < target && metrics.neededLectures > 0) {
-    alerts.push({
-      id: "warning-bunk",
-      type: "warning",
-      message: `Below target (${metrics.percentage}%). Attend next ${metrics.neededLectures} classes to recover.`,
-      icon: <AlertTriangle className="w-4 h-4 text-rose-400" />
-    });
-  }
-
-  // 4. Streak Alert
-  if (streaks.current >= 3) {
-    alerts.push({
-      id: "streak",
-      type: "streak",
-      message: `${streaks.current}-day attendance streak active! 🔥`,
-      icon: <Flame className="w-4 h-4 text-amber-500" />
-    });
-  }
+  const getStatusText = () => {
+    if (isSafeState) return `Safe to bunk ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""}`;
+    if (isNearLimitState) return "On track · No buffer skips available";
+    if (metrics.neededLectures > 0 && metrics.neededLectures !== -1) return `Attend next ${metrics.neededLectures} classes to recover`;
+    return "Below target limit";
+  };
 
   return (
-    <div className="space-y-4 pb-24">
+    <div className="space-y-5 pb-24 relative">
+      
       {/* ──── Compact Header ──── */}
       <div className="flex items-center justify-between px-1">
-        <span className="text-xs font-semibold text-zinc-400">
-          {getGreetingTime()}
-        </span>
-        <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
+        <div>
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+            {getGreetingTime()} 👋
+          </span>
+        </div>
+        <span className="text-xs font-bold uppercase tracking-wider text-purple-650 dark:text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/15">
           Target: {target}%
         </span>
       </div>
 
-      {/* ──── Smart Alerts ──── */}
-      <AnimatePresence>
-        {alerts.length > 0 && (
-          <div className="space-y-2">
-            {alerts.map((alert) => (
-              <motion.div
-                key={alert.id}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                className="p-3.5 glass-card rounded-2xl flex items-start gap-3 glass-shimmer"
-                style={{
-                  borderColor: alert.type === "warning" && alert.id !== "daily-log" 
-                    ? "rgba(239, 68, 68, 0.2)"
-                    : alert.type === "success"
-                      ? "rgba(16, 185, 129, 0.2)"
-                      : "rgba(255,255,255,0.07)"
-                }}
-              >
-                <div className="mt-0.5 shrink-0">{alert.icon}</div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold text-zinc-200 leading-relaxed">
-                    {alert.message}
-                  </p>
-                  {alert.action && alert.action}
+      {/* ──── Unified Attendance Status Card (P2) ──── */}
+      <motion.div
+        layout
+        className={`relative overflow-hidden w-full glass-card-hero rounded-3xl p-5 flex flex-col items-center ${
+          tourStep === 1 ? "ring-2 ring-purple-600 shadow-[0_0_30px_rgba(139,92,246,0.3)] z-50" : ""
+        }`}
+      >
+        {/* Decorative background glow */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/[0.04] blur-3xl rounded-full" />
+        
+        {/* Status Indicator Pill */}
+        <div className="mb-4">
+          <span className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-extrabold tracking-wide ${getStatusBannerColor()}`}>
+            {getStatusText()}
+          </span>
+        </div>
+
+        {/* Ring & Data Side-by-side or Centered */}
+        <div className="flex items-center justify-center gap-6 w-full py-2">
+          <ProgressRing percentage={metrics.percentage} target={target} />
+          
+          <div className="flex flex-col text-left space-y-1">
+            <span className="text-xs font-extrabold uppercase tracking-widest text-zinc-450 dark:text-zinc-500">
+              Attendance Buffer
+            </span>
+            
+            {metrics.safeBunks > 0 ? (
+              <div>
+                <span className="text-xl sm:text-2xl font-black text-emerald-650 dark:text-emerald-400 leading-tight block">
+                  {fullDaysOff} Full Day{fullDaysOff !== 1 ? "s" : ""} Off
+                </span>
+                {extraSkips > 0 && (
+                  <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 block mt-0.5">
+                    (+ {extraSkips} extra lecture skip{extraSkips !== 1 ? "s" : ""})
+                  </span>
+                )}
+              </div>
+            ) : isNearLimitState ? (
+              <div>
+                <span className="text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 leading-tight block">
+                  0 Days Off
+                </span>
+                <span className="text-xs font-bold text-zinc-500 dark:text-zinc-400 block mt-0.5">
+                  On track · No buffer skips
+                </span>
+              </div>
+            ) : (
+              <div>
+                <span className="text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 leading-tight block">
+                  0 Days Off
+                </span>
+                {metrics.neededLectures > 0 && (
+                  <span className="text-xs font-bold text-rose-650 dark:text-rose-450 block mt-0.5">
+                    Attend next {metrics.neededLectures} classes
+                  </span>
+                )}
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-black/5 dark:border-white/5 flex gap-3 text-xs font-bold text-zinc-500 dark:text-zinc-400 mt-1">
+              <span>Current: <strong className="text-zinc-700 dark:text-zinc-200">{metrics.percentage}%</strong></span>
+              <span className="text-zinc-300 dark:text-zinc-700">|</span>
+              <span>Target: <strong className="text-zinc-700 dark:text-zinc-200">{target}%</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Next Class Projections Banner */}
+        <div className="w-full mt-4 pt-3.5 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs font-bold px-1.5 text-zinc-650 dark:text-zinc-400">
+          <span>If you attend next: <strong className="text-emerald-650 dark:text-emerald-400 text-xs font-extrabold">{nextAttPercent}%</strong></span>
+          <span>If you bunk next: <strong className="text-rose-650 dark:text-rose-450 text-xs font-extrabold">{nextBunkPercent}%</strong></span>
+        </div>
+
+        {/* Tour Overlay Anchor 1 */}
+        {tourStep === 1 && (
+          <div className="absolute inset-0 bg-transparent pointer-events-none" />
+        )}
+      </motion.div>
+
+      {/* ──── Today's Lectures Slot Selector Card ──── */}
+      <div className={`glass-card rounded-3xl p-5 space-y-4 glass-shimmer ${
+        tourStep === 2 ? "ring-2 ring-purple-600 shadow-[0_0_30px_rgba(139,92,246,0.3)] z-50" : ""
+      }`}>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider pl-1">
+              Today's Lectures ({new Date().toLocaleDateString('en-US', { weekday: 'long' })})
+            </span>
+            <span className="text-xs text-zinc-500 mt-0.5 pl-1">
+              Tap any slot to log today's attendance
+            </span>
+          </div>
+          
+          {/* Total Slots Adjuster */}
+          <div className="flex items-center gap-1.5 bg-black/5 dark:bg-white/5 rounded-xl p-1">
+            <button
+              onClick={handleDecreaseSlots}
+              className="w-8 h-8 rounded-lg glass-inner flex items-center justify-center text-zinc-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+            >
+              <Minus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-xs font-extrabold text-zinc-800 dark:text-white px-2">
+              {currentTotal} Slots
+            </span>
+            <button
+              onClick={handleIncreaseSlots}
+              className="w-8 h-8 rounded-lg glass-inner flex items-center justify-center text-zinc-700 dark:text-white hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Slot Grid Selection */}
+        <div className="space-y-4 pt-1">
+          {currentTotal > 0 ? (
+            <div className="space-y-3.5">
+              {/* Attended Row */}
+              <div className="flex items-start gap-3">
+                <span className="text-xs font-extrabold uppercase text-zinc-500 mt-2.5 w-16 shrink-0 text-right">
+                  Attended
+                </span>
+                <div className="flex flex-wrap gap-2.5">
+                  <button
+                    onClick={() => handleSelectAttended(0)}
+                    className={`w-11 h-11 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all cursor-pointer border ${
+                      currentAttended === 0
+                        ? "bg-purple-650 border-purple-650 text-white shadow-md shadow-purple-500/20"
+                        : "bg-gray-100 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-400 border-gray-200/50 dark:border-zinc-800 hover:bg-gray-200"
+                    }`}
+                  >
+                    0
+                  </button>
+                  {Array.from({ length: currentTotal }).map((_, i) => {
+                    const slotNum = i + 1;
+                    const isSelected = currentAttended >= slotNum;
+                    return (
+                      <button
+                        key={slotNum}
+                        onClick={() => handleSelectAttended(slotNum)}
+                        className={`w-11 h-11 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all cursor-pointer border ${
+                          isSelected
+                            ? "bg-purple-650 border-purple-650 text-white shadow-md shadow-purple-500/20"
+                            : "bg-gray-100 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-400 border-gray-200/50 dark:border-zinc-800 hover:bg-gray-200"
+                        }`}
+                      >
+                        {slotNum}
+                      </button>
+                    );
+                  })}
                 </div>
-              </motion.div>
-            ))}
+              </div>
+
+              {/* Bunked Row */}
+              <div className="flex items-start gap-3">
+                <span className="text-xs font-extrabold uppercase text-zinc-550 dark:text-zinc-500 mt-2.5 w-16 shrink-0 text-right">
+                  Bunked
+                </span>
+                <div className="flex flex-wrap gap-2.5">
+                  {Array.from({ length: currentTotal }).map((_, i) => {
+                    const slotNum = i + 1;
+                    const isBunked = slotNum > currentAttended;
+                    return (
+                      <button
+                        key={slotNum}
+                        onClick={() => handleSelectAttended(slotNum - 1)}
+                        className={`w-11 h-11 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all cursor-pointer border ${
+                          isBunked
+                            ? "bg-red-500/10 border-red-500/20 text-red-650 dark:text-red-400 hover:bg-red-500/20"
+                            : "bg-gray-100 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-650 border-zinc-200/30 dark:border-zinc-850 opacity-30 cursor-not-allowed"
+                        }`}
+                        disabled={!isBunked}
+                      >
+                        {slotNum}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              No slots configured for today. Add slots using the count control.
+            </div>
+          )}
+
+          {/* Footer stats and manual entry link */}
+          <div className="pt-3 border-t border-black/5 dark:border-white/5 flex items-center justify-between text-xs">
+            <span className="text-zinc-550 dark:text-zinc-400 font-bold">
+              Total Logged: <strong className="text-zinc-800 dark:text-white font-extrabold">{currentAttended}/{currentTotal} Attended</strong> ({currentTotal - currentAttended} Bunked)
+            </span>
+            <button
+              onClick={handleOpenModal}
+              className="flex items-center gap-1 text-xs font-bold text-purple-650 dark:text-purple-400 hover:text-purple-500 transition-colors cursor-pointer py-1"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Log Past Date</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ──── WHAT IF I BUNK Simulator Card (P14) ──── */}
+      <div className="glass-card rounded-3xl p-5 space-y-4 glass-shimmer">
+        <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider pl-1 block">
+          What if I bunk...
+        </span>
+
+        <div className="flex items-center justify-between p-3.5 glass-inner rounded-2xl">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBunkSimCount(Math.max(1, bunkSimCount - 1))}
+                disabled={bunkSimCount === 1}
+                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 text-zinc-700 dark:text-white"
+              >
+                -
+              </button>
+              <span className="text-sm font-extrabold text-zinc-800 dark:text-white w-6 text-center">
+                {bunkSimCount}
+              </span>
+              <button
+                onClick={() => setBunkSimCount(bunkSimCount + 1)}
+                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-white"
+              >
+                +
+              </button>
+            </div>
+            <span className="text-xs text-zinc-650 dark:text-zinc-400 font-semibold">
+              classes in a row
+            </span>
+          </div>
+
+          <div className="text-right">
+            <span className="text-xs text-zinc-500 block">Projection</span>
+            <span className={`text-sm font-extrabold ${isSimulationSafe ? "text-emerald-650 dark:text-emerald-450" : "text-rose-650 dark:text-rose-400"}`}>
+              {metrics.percentage}% → {percentageAfterBunk}%
+            </span>
+          </div>
+        </div>
+
+        {!isSimulationSafe && (
+          <div className="text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-500/10 border border-rose-500/15 p-3 rounded-2xl flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>⚠️ You would fall below your target.</span>
+          </div>
+        )}
+      </div>
+
+      {/* ──── 2-Card Guided Micro Tour Overlay (P13) ──── */}
+      <AnimatePresence>
+        {tourStep !== null && (
+          <div className="fixed inset-0 z-50 pointer-events-none flex flex-col justify-end p-4 pb-28">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] pointer-events-auto" onClick={handleDismissTour} />
+            
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="w-full max-w-md mx-auto glass-card-elevated rounded-3xl p-5 space-y-4 z-50 pointer-events-auto shadow-2xl glass-shimmer border border-purple-500/30"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-purple-650 dark:text-purple-400">
+                  <Sparkles className="w-4 h-4 animate-bounce" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Quick Guided Tour</span>
+                </div>
+                <span className="text-xs font-extrabold text-zinc-500">{tourStep} of 2</span>
+              </div>
+
+              {tourStep === 1 ? (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-extrabold text-zinc-800 dark:text-white">Your Consolidated Metrics</h4>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-350 leading-relaxed">
+                    Your current attendance percentage, skips buffer, target, and projections are merged into this single unified dashboard card. Read your status in under 2 seconds.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-extrabold text-zinc-800 dark:text-white">Fast 1-Tap Daily Logging</h4>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-350 leading-relaxed">
+                    Log today's attendance in a single tap using "+ Attend" or "+ Bunk". Use the steppers below it to adjust logs instantly without your phone keyboard getting in the way.
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t border-black/5 dark:border-white/5">
+                <button
+                  onClick={handleDismissTour}
+                  className="text-xs font-bold text-zinc-450 hover:text-zinc-650 dark:hover:text-white transition-colors cursor-pointer"
+                >
+                  Skip Tour
+                </button>
+                
+                {tourStep === 1 ? (
+                  <button
+                    onClick={() => setTourStep(2)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                  >
+                    Next Step
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleDismissTour}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                  >
+                    Finish Tour
+                  </button>
+                )}
+              </div>
+            </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* ──── Hero Decision Card (P1 & P2) ──── */}
-      <motion.div
-        layout
-        className="relative overflow-hidden w-full glass-card-hero rounded-3xl p-6 flex flex-col items-center text-center glass-shimmer"
-      >
-        {/* Instant Bunk Decision Banner */}
-        <div className="mb-4">
-          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide ${
-            metrics.percentage >= target && metrics.safeBunks > 0
-              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-              : metrics.percentage >= target
-                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
-          }`}>
-            {metrics.percentage >= target && metrics.safeBunks > 0
-              ? `🟢 Safe to miss ${metrics.safeBunks} class${metrics.safeBunks > 1 ? "es" : ""}`
-              : metrics.percentage >= target
-                ? "⚠️ On target — no free bunks"
-                : `🔴 Attend next ${metrics.neededLectures} classes`}
-          </span>
-        </div>
-
-        {/* Attendance % Ring */}
-        <ProgressRing percentage={metrics.percentage} target={target} />
-
-        <p className="mt-4 text-xs font-semibold text-zinc-300 max-w-xs relative z-10">
-          {getStatusMessage()}
-        </p>
-
-        {/* Stats row */}
-        <div className="w-full max-w-xs mt-4 pt-4 border-t border-white/5 space-y-3 relative z-10">
-          <div className="grid grid-cols-3 gap-2 text-center">
-            <div className="p-2 glass-inner rounded-xl">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Attended</span>
-              <span className="text-base font-extrabold text-white">{metrics.attended}</span>
-            </div>
-            <div className="p-2 glass-inner rounded-xl">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Total</span>
-              <span className="text-base font-extrabold text-white">{metrics.total}</span>
-            </div>
-            <div className="p-2 glass-inner rounded-xl">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block">Target</span>
-              <span className="text-base font-extrabold text-purple-400">{target}%</span>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* ──── Action Buttons ──── */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <motion.button
-          onClick={handleOpenModal}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-button-brand text-white cursor-pointer text-center"
-        >
-          <Plus className="w-5 h-5 mb-1.5" />
-          <span className="text-xs font-bold leading-tight">Log Today</span>
-          <span className="text-[9px] text-purple-200/60 mt-0.5 whitespace-nowrap">Full details</span>
-        </motion.button>
-
-        <motion.button
-          onClick={handleQuickAddAttended}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-card text-white cursor-pointer glass-shimmer text-center"
-        >
-          <Zap className="w-5 h-5 mb-1.5 text-emerald-400" />
-          <span className="text-xs font-bold leading-tight">Quick Attend</span>
-          <span className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Attended +1</span>
-        </motion.button>
-
-        <motion.button
-          onClick={handleQuickAddBunk}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex flex-col items-center justify-center p-4 rounded-2xl glass-card text-white cursor-pointer glass-shimmer text-center"
-        >
-          <XCircle className="w-5 h-5 mb-1.5 text-rose-400" />
-          <span className="text-xs font-bold leading-tight">Quick Bunk</span>
-          <span className="text-[9px] text-zinc-500 mt-0.5 whitespace-nowrap">Bunked +1</span>
-        </motion.button>
-      </div>
-
-      {/* ──── Status Cards ──── */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl p-4 glass-card glass-shimmer"
-          style={metrics.percentage >= target ? {
-            background: "rgba(16, 185, 129, 0.05)",
-            borderColor: "rgba(16, 185, 129, 0.2)"
-          } : undefined}
-        >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">Safe Skips</span>
-          <span className={`text-2xl font-extrabold block ${metrics.safeBunks > 0 ? "text-emerald-400" : "text-zinc-500"}`}>
-            {metrics.safeBunks}
-          </span>
-          <span className="text-[10px] text-zinc-400">
-            {metrics.safeBunks > 0 ? "safe skips buffer" : "no free skips"}
-          </span>
-        </div>
-
-        <div className="rounded-2xl p-4 glass-card glass-shimmer"
-          style={metrics.percentage < target ? {
-            background: "rgba(239, 68, 68, 0.05)",
-            borderColor: "rgba(239, 68, 68, 0.2)"
-          } : undefined}
-        >
-          <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 block mb-1">Attend Next</span>
-          <span className={`text-2xl font-extrabold block ${metrics.neededLectures > 0 ? "text-rose-400" : "text-zinc-500"}`}>
-            {metrics.neededLectures === -1 ? "∞" : metrics.neededLectures}
-          </span>
-          <span className="text-[10px] text-zinc-400">
-            {metrics.neededLectures > 0 ? "consecutive classes" : "target achieved!"}
-          </span>
-        </div>
-      </div>
-
-      {/* ──── Skip Predictor ──── */}
-      <div className="glass-card rounded-2xl p-4 glass-shimmer">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-base">🤔</span>
-            <span className="text-xs font-bold text-white">Can I skip tomorrow?</span>
-          </div>
-          <span className={`text-xs font-extrabold px-2.5 py-1 rounded-full backdrop-blur-sm ${
-            percentageAfterSkip >= target
-              ? "bg-green-500/10 text-green-400 border border-green-500/20"
-              : "bg-red-500/10 text-red-400 border border-red-500/20"
-          }`}>
-            {percentageAfterSkip >= target ? "Yes ✓" : "No ✗"}
-          </span>
-        </div>
-        <p className="text-[10px] text-zinc-500 mt-2">
-          {percentageAfterSkip >= target
-            ? `Your attendance will be ${percentageAfterSkip}% — still ${safeBunksAfterSkip} skip${safeBunksAfterSkip !== 1 ? "s" : ""} left`
-            : `Skipping drops you to ${percentageAfterSkip}% — below your ${target}% target`
-          }
-        </p>
-      </div>
-
-      {/* ──── Expandable Insights ──── */}
-      <div className="glass-card rounded-2xl overflow-hidden glass-shimmer">
-        <button
-          onClick={() => setShowInsights(!showInsights)}
-          className="w-full flex items-center justify-between p-4 cursor-pointer hover:bg-white/[0.02] transition-colors"
-        >
-          <div className="flex items-center gap-2.5">
-            <BarChart3 className="w-4 h-4 text-purple-400" />
-            <span className="text-sm font-bold text-white">Insights & Simulator</span>
-          </div>
-          <motion.div animate={{ rotate: showInsights ? 180 : 0 }}>
-            <ChevronDown className="w-4 h-4 text-zinc-500" />
-          </motion.div>
-        </button>
-
-        <AnimatePresence initial={false}>
-          {showInsights && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="overflow-hidden"
-            >
-              <div className="p-4 pt-0 space-y-5">
-                {/* Chart */}
-                <div className="space-y-2">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    Attendance Trend
-                  </span>
-                  {renderSVGChart()}
-                </div>
-
-                {/* Streaks */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="p-3 glass-inner rounded-xl flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                      style={{ background: "rgba(245, 158, 11, 0.1)", border: "1px solid rgba(245, 158, 11, 0.15)" }}>
-                      <Flame className="w-4 h-4 text-amber-500" />
-                    </div>
-                    <div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">Current</span>
-                      <span className="text-sm font-extrabold text-white block">{streaks.current} days</span>
-                    </div>
-                  </div>
-                  <div className="p-3 glass-inner rounded-xl flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                      style={{ background: "rgba(139, 92, 246, 0.1)", border: "1px solid rgba(139, 92, 246, 0.15)" }}>
-                      <Zap className="w-4 h-4 text-purple-400" />
-                    </div>
-                    <div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 block">Best</span>
-                      <span className="text-sm font-extrabold text-white block">{streaks.longest} days</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Simulator */}
-                <div className="space-y-2">
-                  <span className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400">
-                    What if I attend the next...
-                  </span>
-                  <div className="p-3 glass-inner rounded-xl space-y-3">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-zinc-400">
-                        <strong className="text-purple-400">{simLectures}</strong> classes
-                      </span>
-                      <span className="font-extrabold text-white">{simPercentage}%</span>
-                    </div>
-                    <input
-                      type="range" min="1" max="30" value={simLectures}
-                      onChange={(e) => setSimLectures(parseInt(e.target.value))}
-                      className="w-full accent-purple-500 bg-white/5 h-1 rounded-lg cursor-pointer"
-                    />
-                    <div className="flex items-center justify-between text-[9px] text-zinc-600 font-bold">
-                      <span>+1</span><span>+30</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* ──── Recent Log ──── */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold tracking-tight text-white">Recent Log</h3>
-          <motion.button
-            onClick={handleOpenModal}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-xs font-bold text-purple-400"
-            style={{
-              background: "rgba(139, 92, 246, 0.08)",
-              border: "1px solid rgba(139, 92, 246, 0.15)"
-            }}
-          >
-            <Plus className="w-3 h-3" /><span>Add</span>
-          </motion.button>
-        </div>
-
-        <div className="glass-card rounded-2xl overflow-hidden divide-y divide-white/[0.04] glass-shimmer">
-          <AnimatePresence initial={false}>
-            {recentRecords.map((record) => (
-              <motion.div
-                key={record.id}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="p-3.5 flex items-center justify-between hover:bg-white/[0.02] transition-all group overflow-hidden"
-              >
-                <div className="space-y-0.5">
-                  <p className="text-sm font-bold text-white">{formatDateString(record.dateTimestamp)}</p>
-                  <div className="flex items-center gap-2">
-                    {record.isHoliday ? (
-                      <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-amber-300 px-2 py-0.5 rounded-lg"
-                        style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.15)" }}>
-                        Holiday
-                      </span>
-                    ) : (
-                      <>
-                        <span className="text-xs text-zinc-400 font-medium">
-                          <strong className="text-white">{record.attendedLectures}/{record.totalLectures}</strong>
-                        </span>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-lg ${
-                          record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                            ? "text-green-400" : "text-red-400"
-                        }`}
-                          style={{
-                            background: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                              ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
-                            border: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                              ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(239, 68, 68, 0.15)"
-                          }}
-                        >
-                          {record.totalLectures > 0 ? `${Math.round((record.attendedLectures / record.totalLectures) * 100)}%` : "0%"}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <motion.button
-                  onClick={() => record.id && deleteRecord(record.id)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="p-2 text-zinc-600 hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </motion.button>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {records.length > 5 && (
-          <button
-            onClick={() => setShowAllLogs(!showAllLogs)}
-            className="w-full text-center text-xs font-bold text-purple-400 hover:text-purple-300 py-2 cursor-pointer transition-colors"
-          >
-            {showAllLogs ? "Show Less ↑" : `Show All ${records.length} Entries ↓`}
-          </button>
-        )}
-      </div>
-
-      {/* ──── Glass Log Modal ──── */}
+      {/* ──── Custom / Past Date Logging Modal (P5) ──── */}
       <AnimatePresence>
         {showLogModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-55 flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowLogModal(false)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-md"
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
             />
 
             <motion.div
@@ -874,65 +627,109 @@ export default function Dashboard() {
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
               transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="w-full max-w-sm glass-card-elevated rounded-2xl p-6 space-y-5 z-10 glass-shimmer"
+              className="w-full max-w-sm glass-card-elevated rounded-3xl p-6 space-y-5 z-10 glass-shimmer flex flex-col max-h-[90vh] overflow-y-auto"
             >
               <div className="flex items-center justify-between">
-                <h4 className="text-lg font-extrabold tracking-tight text-white">Log Attendance</h4>
-                <button onClick={() => setShowLogModal(false)}
-                  className="text-xs font-bold text-zinc-500 hover:text-white transition-colors cursor-pointer">✕</button>
+                <h4 className="text-base font-extrabold text-zinc-800 dark:text-white tracking-tight">Custom Date Entry</h4>
+                <button
+                  onClick={() => setShowLogModal(false)}
+                  className="text-xs font-bold text-zinc-450 hover:text-zinc-750 dark:hover:text-white transition-colors cursor-pointer p-1"
+                >
+                  ✕
+                </button>
               </div>
 
-              <form onSubmit={handleLogSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Date</label>
-                  <input type="date" required value={logDate} onChange={(e) => setLogDate(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none" />
+              <form onSubmit={handleLogSubmit} className="space-y-4 flex-1 flex flex-col justify-between">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 pl-1">
+                      Select Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={logDate}
+                      onChange={(e) => setLogDate(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-850 dark:text-white text-sm focus:outline-none font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3.5 glass-inner rounded-xl">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-zinc-800 dark:text-white">Holiday?</span>
+                      <p className="text-xs text-zinc-550 dark:text-zinc-500">Exclude this day from statistics</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={isHoliday}
+                        onChange={(e) => setIsHoliday(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-white/10 dark:bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-400 after:border-none after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-650 peer-checked:after:bg-white" />
+                    </label>
+                  </div>
+
+                  {!isHoliday && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 pl-1">
+                          Attended
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={attended}
+                          onFocus={handleInputFocus}
+                          onChange={(e) => setAttended(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-850 dark:text-white text-sm focus:outline-none font-semibold"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-2 pl-1">
+                          Total
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          required
+                          value={total}
+                          onFocus={handleInputFocus}
+                          onChange={(e) => setTotal(e.target.value)}
+                          className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-850 dark:text-white text-sm focus:outline-none font-semibold"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {validationError && (
+                    <div className="text-xs font-medium text-red-750 dark:text-red-400 p-3 rounded-xl flex items-center gap-2 bg-red-500/10 border border-red-500/15">
+                      <XCircle className="w-4 h-4 shrink-0" />
+                      <span>{validationError}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between p-3.5 glass-inner rounded-xl">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-white">Holiday?</span>
-                    <p className="text-[10px] text-zinc-500">No classes this day</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" checked={isHoliday} onChange={(e) => setIsHoliday(e.target.checked)} className="sr-only peer" />
-                    <div className="w-9 h-5 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-500 after:border-none after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 peer-checked:after:bg-white" />
-                  </label>
+                {/* Mobile keyboard safety container */}
+                <div ref={modalSaveBtnRef} className="pt-4 border-t border-black/5 dark:border-white/5 sticky bottom-0 bg-transparent">
+                  <motion.button
+                    type="submit"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full py-3.5 glass-button-brand text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer text-sm shadow-md"
+                  >
+                    <CheckCircle2 className="w-4.5 h-4.5" />
+                    <span>Save Attendance</span>
+                  </motion.button>
                 </div>
-
-                {!isHoliday && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Attended</label>
-                      <input type="number" min="0" required value={attended} onChange={(e) => setAttended(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none" />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">Total</label>
-                      <input type="number" min="0" required value={total} onChange={(e) => setTotal(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none" />
-                    </div>
-                  </div>
-                )}
-
-                {validationError && (
-                  <div className="text-[11px] font-medium text-red-400 p-3 rounded-lg flex items-center gap-2"
-                    style={{ background: "rgba(239, 68, 68, 0.08)", border: "1px solid rgba(239, 68, 68, 0.15)" }}>
-                    <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{validationError}</span>
-                  </div>
-                )}
-
-                <motion.button type="submit" whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                  className="w-full py-3 glass-button-brand text-white font-bold rounded-xl flex items-center justify-center gap-2 cursor-pointer">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Log Attendance</span>
-                </motion.button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+
     </div>
   );
 }

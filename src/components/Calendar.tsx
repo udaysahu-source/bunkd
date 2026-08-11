@@ -9,11 +9,14 @@ import {
   Sun,
   XCircle,
   CheckCircle2,
-  Trash2
+  Trash2,
+  Plus
 } from "lucide-react";
 
 export default function Calendar() {
-  const { records, logAttendance, deleteRecord, showToast } = useStore();
+  const { records, logAttendance, deleteRecord, showToast, settings } = useStore();
+  const target = settings?.targetPercentage ?? 75;
+  const [showAllLogs, setShowAllLogs] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   
@@ -122,10 +125,10 @@ export default function Calendar() {
   return (
     <div className="space-y-6 pb-24">
       <div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-white leading-none">
+        <h2 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-none">
           Calendar
         </h2>
-        <p className="text-zinc-500 text-sm mt-1">
+        <p className="text-zinc-550 dark:text-zinc-500 text-sm mt-1">
           Tap a date to update your status
         </p>
       </div>
@@ -134,21 +137,21 @@ export default function Calendar() {
       <div className="glass-card rounded-3xl p-4 sm:p-6 glass-shimmer">
         {/* Month Selector */}
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base sm:text-lg font-bold text-white">
+          <h3 className="text-base sm:text-lg font-bold text-zinc-800 dark:text-white">
             {monthNames[month]} {year}
           </h3>
           <div className="flex items-center gap-1.5">
             <motion.button
               onClick={prevMonth}
               whileTap={{ scale: 0.95 }}
-              className="p-2 hover:bg-white/[0.04] text-zinc-400 hover:text-white rounded-lg transition-all cursor-pointer border border-transparent hover:border-white/[0.06]"
+              className="w-12 h-12 flex items-center justify-center hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-white rounded-xl transition-all cursor-pointer border border-transparent hover:border-black/[0.05] dark:hover:border-white/[0.06]"
             >
               <ChevronLeft className="w-4 h-4" />
             </motion.button>
             <motion.button
               onClick={nextMonth}
               whileTap={{ scale: 0.95 }}
-              className="p-2 hover:bg-white/[0.04] text-zinc-400 hover:text-white rounded-lg transition-all cursor-pointer border border-transparent hover:border-white/[0.06]"
+              className="w-12 h-12 flex items-center justify-center hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-white rounded-xl transition-all cursor-pointer border border-transparent hover:border-black/[0.05] dark:hover:border-white/[0.06]"
             >
               <ChevronRight className="w-4 h-4" />
             </motion.button>
@@ -160,7 +163,7 @@ export default function Calendar() {
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
             <span
               key={dayName}
-              className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-zinc-500"
+              className="text-xs sm:text-xs font-extrabold uppercase tracking-wider text-zinc-500"
             >
               {dayName}
             </span>
@@ -222,7 +225,7 @@ export default function Calendar() {
                   className={`aspect-square rounded-xl ${bgClass} ${borderClass} p-1 sm:p-1.5 flex flex-col justify-between items-center relative cursor-pointer group transition-all select-none`}
                 >
                   {/* Day number */}
-                  <span className={`text-[11px] sm:text-xs font-bold ${textClass}`}>
+                  <span className={`text-xs sm:text-xs font-bold ${textClass}`}>
                     {date.getDate()}
                   </span>
 
@@ -232,7 +235,7 @@ export default function Calendar() {
                       record.isHoliday ? (
                         <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
                       ) : (
-                        <span className="text-[8px] sm:text-[9px] font-extrabold tracking-tighter">
+                        <span className="text-xs sm:text-xs font-extrabold tracking-tighter">
                           {record.attendedLectures}/{record.totalLectures}
                         </span>
                       )
@@ -244,6 +247,117 @@ export default function Calendar() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Recent Log list inside Calendar */}
+      {(() => {
+        const formatDateString = (timestamp: number) => {
+          const date = new Date(timestamp);
+          return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
+        };
+        const dailyRecords = records.filter(r => r.type !== "baseline");
+        const recentRecords = showAllLogs ? dailyRecords.slice().reverse() : dailyRecords.slice().reverse().slice(0, 5);
+
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold tracking-tight text-zinc-800 dark:text-white">Recent Log</h3>
+              <motion.button
+                onClick={() => handleDayClick(new Date())}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-xs font-bold text-purple-650 dark:text-purple-400"
+                style={{
+                  background: "rgba(139, 92, 246, 0.08)",
+                  border: "1px solid rgba(139, 92, 246, 0.15)"
+                }}
+              >
+                <Plus className="w-3.5 h-3.5" /><span>Add Log</span>
+              </motion.button>
+            </div>
+
+            <div className="glass-card rounded-2xl overflow-hidden divide-y divide-black/[0.04] dark:divide-white/[0.04] glass-shimmer">
+              <AnimatePresence initial={false}>
+                {recentRecords.length === 0 ? (
+                  <div className="p-6 text-center text-xs text-zinc-500 font-semibold">
+                    No daily logs yet. Tap a date on the calendar above to start logging.
+                  </div>
+                ) : (
+                  recentRecords.map((record) => (
+                    <motion.div
+                      key={record.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="p-3.5 flex items-center justify-between hover:bg-black/[0.01] dark:hover:bg-white/[0.02] transition-all group overflow-hidden"
+                    >
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-zinc-800 dark:text-white">{formatDateString(record.dateTimestamp)}</p>
+                        <div className="flex items-center gap-2">
+                          {record.isHoliday ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded-lg"
+                              style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.15)" }}>
+                              Holiday
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-xs text-zinc-550 dark:text-zinc-400 font-medium">
+                                <strong className="text-zinc-800 dark:text-white">{record.attendedLectures}/{record.totalLectures}</strong>
+                              </span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                                record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
+                                  ? "text-green-600 dark:text-green-400" : "text-red-650 dark:text-red-400"
+                              }`}
+                                style={{
+                                  background: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
+                                    ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                                  border: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
+                                    ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(239, 68, 68, 0.15)"
+                                }}
+                              >
+                                {record.totalLectures > 0 ? `${Math.round((record.attendedLectures / record.totalLectures) * 100)}%` : "0%"}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <motion.button
+                          onClick={() => record.id && handleDayClick(new Date(record.dateTimestamp))}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-2.5 py-1 text-xs font-bold text-purple-650 dark:text-purple-400 hover:bg-purple-500/10 rounded-md transition-all cursor-pointer border border-transparent hover:border-purple-500/20"
+                        >
+                          Edit
+                        </motion.button>
+                        <motion.button
+                          onClick={() => record.id && deleteRecord(record.id)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
+
+            {dailyRecords.length > 5 && (
+              <button
+                onClick={() => setShowAllLogs(!showAllLogs)}
+                className="w-full text-center text-xs font-bold text-purple-650 dark:text-purple-400 hover:text-purple-500 py-2 cursor-pointer transition-colors"
+              >
+                {showAllLogs ? "Show Less ↑" : `Show All ${dailyRecords.length} Entries ↓`}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Date Logging Modal */}
       <AnimatePresence>
@@ -275,7 +389,7 @@ export default function Calendar() {
                       month: "long"
                     })}
                   </h4>
-                  <p className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider mt-0.5">Update status for this date</p>
+                  <p className="text-xs text-zinc-550 font-bold uppercase tracking-wider mt-0.5">Update status for this date</p>
                 </div>
                 <motion.button
                   onClick={() => setSelectedDate(null)}
@@ -295,7 +409,7 @@ export default function Calendar() {
                       <Sun className="w-3.5 h-3.5 text-amber-400" />
                       Mark as Holiday
                     </span>
-                    <p className="text-[10px] text-zinc-500">Exclude from metrics</p>
+                    <p className="text-xs text-zinc-500">Exclude from metrics</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -311,7 +425,7 @@ export default function Calendar() {
                 {!isHoliday && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
                         Attended
                       </label>
                       <input
@@ -324,7 +438,7 @@ export default function Calendar() {
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
                         Total
                       </label>
                       <input
@@ -340,7 +454,7 @@ export default function Calendar() {
                 )}
 
                 {validationError && (
-                  <div className="text-[11px] font-medium text-red-400 rounded-lg p-3 flex items-center gap-2" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
+                  <div className="text-xs font-medium text-red-400 rounded-lg p-3 flex items-center gap-2" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
                     <XCircle className="w-3.5 h-3.5 shrink-0" />
                     <span>{validationError}</span>
                   </div>

@@ -32,8 +32,8 @@ export default function FirebaseSetupGuide() {
             </span>
             <ol className="list-decimal list-inside space-y-2.5 pl-1 text-zinc-600 dark:text-zinc-400 font-medium">
               <li>
-                Create a <code className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[11px] font-semibold text-zinc-800 dark:text-zinc-300">.env</code> file in your project root:
-                <div className="mt-1 pl-4 text-[10px] text-zinc-400">
+                Create a <code className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-300">.env</code> file in your project root:
+                <div className="mt-1 pl-4 text-xs text-zinc-400">
                   You can duplicate the <code className="font-semibold text-zinc-500">.env.template</code> file.
                 </div>
               </li>
@@ -43,13 +43,13 @@ export default function FirebaseSetupGuide() {
               <li>
                 Restart your local dev server:
                 <div className="mt-1 pl-4">
-                  Run <code className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-[11px] font-semibold text-zinc-800 dark:text-zinc-300">npm run dev</code> in the terminal.
+                  Run <code className="px-1.5 py-0.5 rounded bg-zinc-200 dark:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-300">npm run dev</code> in the terminal.
                 </div>
               </li>
             </ol>
           </div>
 
-          <div className="flex items-start gap-2 p-3 bg-zinc-50 dark:bg-zinc-850/50 rounded-xl border border-zinc-200/20 dark:border-zinc-700/10 text-zinc-450 dark:text-zinc-500 text-[10px] leading-relaxed">
+          <div className="flex items-start gap-2 p-3 bg-zinc-50 dark:bg-zinc-850/50 rounded-xl border border-zinc-200/20 dark:border-zinc-700/10 text-zinc-450 dark:text-zinc-500 text-xs leading-relaxed">
             <HelpCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>
               If you already created the `.env` file, please make sure the variables are prefixed with `NEXT_PUBLIC_` (e.g. `NEXT_PUBLIC_FIREBASE_API_KEY`) so they are exposed to the client bundle.

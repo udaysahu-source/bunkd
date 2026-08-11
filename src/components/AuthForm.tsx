@@ -274,7 +274,7 @@ export default function AuthForm() {
         <form onSubmit={handleSubmit} className="w-full space-y-4" noValidate>
           {/* Email Address Input */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
               Email
             </label>
             <div className="relative">
@@ -316,7 +316,7 @@ export default function AuthForm() {
 
           {/* Password Input */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
               Password
             </label>
             <div className="relative">
@@ -342,7 +342,7 @@ export default function AuthForm() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-colors"
+                className="absolute right-1 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-gray-400 hover:text-gray-650 dark:hover:text-zinc-200 transition-colors cursor-pointer"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 <AnimatePresence mode="wait" initial={false}>
@@ -441,10 +441,12 @@ export default function AuthForm() {
             )}
           </motion.button>
 
+
+
           {/* Divider */}
           <div className="relative flex items-center justify-center my-6 w-full">
             <div className="border-t border-gray-200/50 dark:border-bunkd-border-dark w-full"></div>
-            <span className="absolute bg-white dark:bg-bunkd-card-dark px-3.5 text-[9px] uppercase font-extrabold tracking-widest text-gray-400 dark:text-zinc-500">Or</span>
+            <span className="absolute bg-white dark:bg-bunkd-card-dark px-3.5 text-xs uppercase font-extrabold tracking-widest text-gray-400 dark:text-zinc-500">Or</span>
           </div>
 
           {/* Guest Button */}
@@ -538,7 +540,7 @@ export default function AuthForm() {
                   </p>
                   
                   {resendCooldown > 0 ? (
-                    <span className="text-[10px] text-gray-500 dark:text-gray-500 mt-4 font-semibold">
+                    <span className="text-xs text-gray-500 dark:text-gray-500 mt-4 font-semibold">
                       Resend link in {resendCooldown}s
                     </span>
                   ) : (
@@ -555,7 +557,7 @@ export default function AuthForm() {
               ) : (
                 <form onSubmit={handleForgotSubmit} className="mt-5 space-y-4" noValidate>
                   <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-zinc-400 mb-2 pl-1">
                       Email Address
                     </label>
                     <div className="relative">

@@ -12,7 +12,7 @@ export default function GlobalToast() {
     if (toast) {
       const timer = setTimeout(() => {
         hideToast();
-      }, 4500);
+      }, 2500);
       return () => clearTimeout(timer);
     }
   }, [toast, hideToast]);
@@ -20,7 +20,7 @@ export default function GlobalToast() {
   return (
     <AnimatePresence>
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-55 px-4 w-full max-w-sm pointer-events-none">
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-55 px-4 w-full max-w-sm pointer-events-none">
           <motion.div
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}

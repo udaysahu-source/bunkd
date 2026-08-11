@@ -8,11 +8,12 @@ import Calendar from "./Calendar";
 import Settings from "./Settings";
 import FirebaseSetupGuide from "./FirebaseSetupGuide";
 import InstallPrompt from "./InstallPrompt";
+import ProfileModal from "./ProfileModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { LayoutDashboard, CalendarDays, Settings as SettingsIcon } from "lucide-react";
 
 export default function App() {
-  const { user, authLoading, isFirebaseConfigured, initialize } = useStore();
+  const { user, authLoading, isFirebaseConfigured, initialize, profile, profileLoading } = useStore();
   const [activeTab, setActiveTab] = useState<"dashboard" | "calendar" | "settings">("dashboard");
 
   console.log("App.tsx: Render", { authLoading, user, isFirebaseConfigured });
@@ -43,7 +44,7 @@ export default function App() {
     };
   }, [initialize]);
 
-  if (authLoading) {
+  if (authLoading || (user && profileLoading)) {
     return (
       <div className="min-h-screen bg-bunkd-bg-dark glass-bg-mesh flex flex-col items-center justify-center">
         <motion.div
@@ -78,6 +79,10 @@ export default function App() {
     return <AuthForm />;
   }
 
+  if (!profile || !profile.semester) {
+    return <ProfileModal />;
+  }
+
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
@@ -92,12 +97,12 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-bunkd-bg-dark glass-bg-mesh text-white flex flex-col relative">
+    <div className="min-h-screen bg-white dark:bg-bunkd-bg-dark glass-bg-mesh text-zinc-900 dark:text-white flex flex-col relative transition-colors duration-300">
       {/* Ambient glow orbs — decorative background */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-purple-600/[0.07] blur-[120px] rounded-full" />
-        <div className="absolute top-1/2 -right-24 w-[300px] h-[300px] bg-purple-500/[0.05] blur-[100px] rounded-full" />
-        <div className="absolute -bottom-20 left-1/3 w-[350px] h-[350px] bg-violet-600/[0.04] blur-[110px] rounded-full" />
+        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-purple-600/[0.05] dark:bg-purple-600/[0.07] blur-[120px] rounded-full" />
+        <div className="absolute top-1/2 -right-24 w-[300px] h-[300px] bg-purple-500/[0.03] dark:bg-purple-500/[0.05] blur-[100px] rounded-full" />
+        <div className="absolute -bottom-20 left-1/3 w-[350px] h-[350px] bg-violet-600/[0.03] dark:bg-violet-600/[0.04] blur-[110px] rounded-full" />
       </div>
 
       <InstallPrompt />
@@ -109,12 +114,12 @@ export default function App() {
             <div className="w-8 h-8 glass-button-brand rounded-xl flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">B</span>
             </div>
-            <span className="font-bold text-base tracking-tight text-white">
+            <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-white">
               Bunkd
             </span>
           </div>
 
-          <span className="text-[10px] font-semibold text-zinc-400 glass-inner px-2.5 py-1.5 rounded-full max-w-[140px] truncate">
+          <span className="text-xs font-semibold text-zinc-600 dark:text-zinc-400 glass-inner px-2.5 py-1.5 rounded-full max-w-[140px] truncate">
             {user.email}
           </span>
         </div>
@@ -138,7 +143,7 @@ export default function App() {
       {/* ── Glass Bottom Navigation ── */}
       <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 pointer-events-none z-50">
         {/* Fade gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-bunkd-bg-dark via-bunkd-bg-dark/80 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-bunkd-bg-dark via-white/80 dark:via-bunkd-bg-dark/80 to-transparent pointer-events-none" />
         
         <nav className="max-w-md mx-auto glass-nav rounded-2xl p-1.5 flex items-center justify-between pointer-events-auto relative glass-shimmer">
           {/* Dashboard Tab */}
@@ -162,18 +167,18 @@ export default function App() {
             <LayoutDashboard
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-400 scale-110"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
+              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "dashboard"
-                  ? "text-purple-400"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             >
-              Dashboard
+              Home
             </span>
           </motion.button>
 
@@ -198,15 +203,15 @@ export default function App() {
             <CalendarDays
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-400 scale-110"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
+              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "calendar"
-                  ? "text-purple-400"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             >
               Calendar
@@ -234,15 +239,15 @@ export default function App() {
             <SettingsIcon
               className={`w-5 h-5 transition-all duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-400 scale-110"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400 scale-110"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             />
             <span
-              className={`text-[9px] font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
+              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
                 activeTab === "settings"
-                  ? "text-purple-400"
-                  : "text-zinc-500 group-hover:text-zinc-400"
+                  ? "text-purple-650 dark:text-purple-400"
+                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
               }`}
             >
               Settings
