@@ -409,6 +409,53 @@ export default function Dashboard() {
         )}
       </motion.div>
 
+      {/* ──── WHAT IF I BUNK Simulator Card (P14) ──── */}
+      <div className="glass-card rounded-3xl p-5 space-y-4 glass-shimmer">
+        <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider pl-1 block">
+          What if I bunk...
+        </span>
+
+        <div className="flex items-center justify-between p-3.5 glass-inner rounded-2xl">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setBunkSimCount(Math.max(1, bunkSimCount - 1))}
+                disabled={bunkSimCount === 1}
+                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 text-zinc-700 dark:text-white"
+              >
+                -
+              </button>
+              <span className="text-sm font-extrabold text-zinc-800 dark:text-white w-6 text-center">
+                {bunkSimCount}
+              </span>
+              <button
+                onClick={() => setBunkSimCount(bunkSimCount + 1)}
+                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-white"
+              >
+                +
+              </button>
+            </div>
+            <span className="text-xs text-zinc-650 dark:text-zinc-400 font-semibold">
+              classes in a row
+            </span>
+          </div>
+
+          <div className="text-right">
+            <span className="text-xs text-zinc-500 block">Projection</span>
+            <span className={`text-sm font-extrabold ${isSimulationSafe ? "text-emerald-650 dark:text-emerald-450" : "text-rose-650 dark:text-rose-400"}`}>
+              {metrics.percentage}% → {percentageAfterBunk}%
+            </span>
+          </div>
+        </div>
+
+        {!isSimulationSafe && (
+          <div className="text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-500/10 border border-rose-500/15 p-3 rounded-2xl flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+            <span>⚠️ You would fall below your target.</span>
+          </div>
+        )}
+      </div>
+
       {/* ──── Today's Lectures Slot Selector Card ──── */}
       <div className={`glass-card rounded-3xl p-5 space-y-4 glass-shimmer ${
         tourStep === 2 ? "ring-2 ring-purple-600 shadow-[0_0_30px_rgba(139,92,246,0.3)] z-50" : ""
@@ -509,52 +556,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ──── WHAT IF I BUNK Simulator Card (P14) ──── */}
-      <div className="glass-card rounded-3xl p-5 space-y-4 glass-shimmer">
-        <span className="text-xs font-bold text-zinc-550 dark:text-zinc-400 uppercase tracking-wider pl-1 block">
-          What if I bunk...
-        </span>
-
-        <div className="flex items-center justify-between p-3.5 glass-inner rounded-2xl">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setBunkSimCount(Math.max(1, bunkSimCount - 1))}
-                disabled={bunkSimCount === 1}
-                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 text-zinc-700 dark:text-white"
-              >
-                -
-              </button>
-              <span className="text-sm font-extrabold text-zinc-800 dark:text-white w-6 text-center">
-                {bunkSimCount}
-              </span>
-              <button
-                onClick={() => setBunkSimCount(bunkSimCount + 1)}
-                className="w-8 h-8 rounded-xl glass-inner flex items-center justify-center font-bold hover:bg-black/5 dark:hover:bg-white/5 text-zinc-700 dark:text-white"
-              >
-                +
-              </button>
-            </div>
-            <span className="text-xs text-zinc-650 dark:text-zinc-400 font-semibold">
-              classes in a row
-            </span>
-          </div>
-
-          <div className="text-right">
-            <span className="text-xs text-zinc-500 block">Projection</span>
-            <span className={`text-sm font-extrabold ${isSimulationSafe ? "text-emerald-650 dark:text-emerald-450" : "text-rose-650 dark:text-rose-400"}`}>
-              {metrics.percentage}% → {percentageAfterBunk}%
-            </span>
-          </div>
-        </div>
-
-        {!isSimulationSafe && (
-          <div className="text-xs font-bold text-rose-700 dark:text-rose-400 bg-rose-500/10 border border-rose-500/15 p-3 rounded-2xl flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>⚠️ You would fall below your target.</span>
-          </div>
-        )}
-      </div>
 
       {/* ──── 2-Card Guided Micro Tour Overlay (P13) ──── */}
       <AnimatePresence>

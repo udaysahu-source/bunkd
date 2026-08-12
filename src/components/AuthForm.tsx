@@ -450,17 +450,22 @@ export default function AuthForm() {
           </div>
 
           {/* Guest Button */}
-          <motion.button
-            type="button"
-            onClick={handleGuestLogin}
-            disabled={loading}
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            className="w-full py-3 bg-gray-150/40 hover:bg-gray-150/80 dark:bg-bunkd-bg-dark dark:hover:bg-bunkd-bg-secondary-dark/60 text-gray-800 dark:text-zinc-300 font-bold rounded-xl border border-gray-200/50 dark:border-bunkd-border-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <User className="w-4 h-4 text-purple-500" />
-            <span>Continue as Guest</span>
-          </motion.button>
+          <div className="w-full space-y-2">
+            <motion.button
+              type="button"
+              onClick={handleGuestLogin}
+              disabled={loading}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 bg-gray-150/40 hover:bg-gray-150/80 dark:bg-bunkd-bg-dark dark:hover:bg-bunkd-bg-secondary-dark/60 text-gray-800 dark:text-zinc-300 font-bold rounded-xl border border-gray-200/50 dark:border-bunkd-border-dark transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <User className="w-4 h-4 text-purple-500" />
+              <span>Continue as Guest</span>
+            </motion.button>
+            <p className="text-[10px] text-zinc-500 dark:text-zinc-550 text-center font-medium leading-normal">
+              Your data stays on this device — sign up to keep it safe.
+            </p>
+          </div>
         </form>
 
         {/* Forgot Password Button */}

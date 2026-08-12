@@ -1,41 +1,89 @@
 /* File: src/app/globals.css */
 @import "tailwindcss";
 
+:root {
+  --brand-primary: #6D5CE0;
+  --brand-hover: #5A49D0;
+  --brand-light: #A499F1;
+  
+  --success-color: #22C55E;
+  --danger-color: #EF4444;
+  --warning-color: #F59E0B;
+  
+  --text-heading: #111827;
+  --text-body: #4B5563;
+  --card-bg: rgba(248, 247, 252, 0.85); /* #F8F7FC with alpha */
+  --card-border: rgba(229, 231, 235, 0.8); /* #E5E7EB with alpha */
+  
+  --bunkd-bg: #f9fafb;
+}
+
+.dark {
+  --text-heading: #F9FAFB;
+  --text-body: #9CA3AF;
+  --card-bg: rgba(30, 27, 46, 0.75); /* #1E1B2E with alpha */
+  --card-border: rgba(45, 42, 61, 0.7); /* #2D2A3D with alpha */
+  
+  --brand-primary: #6D5CE0;
+  --brand-hover: #8172F0;
+  --brand-light: #8E7FF7;
+  
+  --bunkd-bg: #12101E;
+}
+
 @theme {
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   
-  /* Bunkd Color System */
-  --color-bunkd-bg: #f9fafb;
-  --color-bunkd-bg-secondary: #f3f4f6;
-  --color-bunkd-bg-dark: #0f172a;
-  --color-bunkd-bg-secondary-dark: #1e293b;
+  /* Refined Bunkd Color System */
+  --color-bunkd-brand: var(--brand-primary);
+  --color-bunkd-brand-hover: var(--brand-hover);
+  --color-bunkd-brand-light: var(--brand-light);
   
-  --color-bunkd-card: #ffffff;
-  --color-bunkd-card-elevated: #ffffff;
-  --color-bunkd-card-dark: #1e293b;
-  --color-bunkd-card-elevated-dark: #334155;
+  --color-bunkd-success: var(--success-color);
+  --color-bunkd-error: var(--danger-color);
+  --color-bunkd-warning: var(--warning-color);
   
-  --color-bunkd-border: #e5e7eb;
-  --color-bunkd-border-dark: #334155;
+  --color-bunkd-bg: var(--bunkd-bg);
+  --color-bunkd-bg-dark: var(--bunkd-bg);
   
-  --color-bunkd-text: #111827;
-  --color-bunkd-text-secondary: #4b5563;
-  --color-bunkd-text-muted: #9ca3af;
-  --color-bunkd-text-dark: #ffffff;
-  --color-bunkd-text-secondary-dark: #cbd5e1;
-  --color-bunkd-text-muted-dark: #64748b;
+  --color-bunkd-card: var(--card-bg);
+  --color-bunkd-card-dark: var(--card-bg);
   
-  --color-bunkd-brand: #8b5cf6;
-  --color-bunkd-brand-hover: #7c3aed;
-  --color-bunkd-brand-light: #c4b5fd;
+  --color-bunkd-border: var(--card-border);
+  --color-bunkd-border-dark: var(--card-border);
   
-  --color-bunkd-success: #10b981;
-  --color-bunkd-success-dark: #059669;
-  --color-bunkd-error: #ef4444;
-  --color-bunkd-error-dark: #dc2626;
-  --color-bunkd-warning: #f59e0b;
-  --color-bunkd-warning-dark: #d97706;
+  /* Overrides for standard Tailwind colors to catch existing layout styling in the app */
+  --color-purple-400: var(--brand-light);
+  --color-purple-500: var(--brand-primary);
+  --color-purple-600: var(--brand-primary);
+  --color-purple-650: var(--brand-hover);
+  --color-purple-700: var(--brand-hover);
+  --color-purple-750: var(--brand-hover);
+  
+  --color-emerald-400: var(--success-color);
+  --color-emerald-500: var(--success-color);
+  --color-emerald-600: var(--success-color);
+  --color-emerald-650: var(--success-color);
+  --color-emerald-700: var(--success-color);
+  
+  --color-rose-400: var(--danger-color);
+  --color-rose-450: var(--danger-color);
+  --color-rose-500: var(--danger-color);
+  --color-rose-600: var(--danger-color);
+  --color-rose-650: var(--danger-color);
+  --color-rose-700: var(--danger-color);
+  
+  --color-red-400: var(--danger-color);
+  --color-red-500: var(--danger-color);
+  --color-red-600: var(--danger-color);
+  --color-red-700: var(--danger-color);
+  
+  /* Theme tokens */
+  --color-text-heading: var(--text-heading);
+  --color-text-body: var(--text-body);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
 }
 
 @variant dark (&:where(.dark, .dark *));
@@ -65,48 +113,44 @@ html, body {
 /* Quiet background base */
 .glass-bg-mesh {
   background: 
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(139, 92, 246, 0.04) 0%, transparent 60%);
+    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(109, 92, 224, 0.04) 0%, transparent 60%);
 }
 
 /* Primary card — subtle surface with crisp 1px border */
 .glass-card {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
 }
 
 .dark .glass-card {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .glass-card:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  border-color: var(--card-border);
 }
 
 .dark .glass-card:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--card-bg);
+  border-color: var(--card-border);
 }
 
 /* Hero card — prioritized elevation without heavy glow */
 .glass-card-hero {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--card-border);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.05),
-    0 1px 0 rgba(255, 255, 255, 0.5) inset;
+    0 1px 0 rgba(255, 255, 255, 0.4) inset;
 }
 
 .dark .glass-card-hero {
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.25),
     0 1px 0 rgba(255, 255, 255, 0.05) inset;
@@ -114,103 +158,96 @@ html, body {
 
 /* Elevated card for modals & overlays */
 .glass-card-elevated {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--card-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
 }
 
 .dark .glass-card-elevated {
-  background: rgba(51, 65, 85, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 
 /* Subtle inner panel — nested stat boxes */
 .glass-inner {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  background: rgba(0, 0, 0, 0.015);
+  border: 1px solid var(--card-border);
 }
 
 .dark .glass-inner {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 /* Primary Brand Action Button (Solid crisp purple) */
 .glass-button-brand {
-  background: #8b5cf6;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.25);
+  background: var(--brand-primary);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 2px 10px rgba(109, 92, 224, 0.2);
   transition: all 180ms ease-out;
 }
 
 .glass-button-brand:hover {
-  background: #7c3aed;
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+  background: var(--brand-hover);
+  box-shadow: 0 4px 16px rgba(109, 92, 224, 0.3);
 }
 
 /* Glass nav bar */
 .glass-nav {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--card-border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
 }
 
 .dark .glass-nav {
-  background: rgba(15, 23, 42, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
 }
 
 /* Glass header */
 .glass-header {
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--card-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--card-border);
 }
 
 .dark .glass-header {
-  background: rgba(15, 23, 42, 0.85);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--card-bg);
 }
 
 /* Glass input */
 .glass-input {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.015);
+  border: 1px solid var(--card-border);
   transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
 }
 
 .glass-input::placeholder {
-  color: #6b7280; /* high contrast gray */
+  color: #9ca3af;
   opacity: 0.85;
 }
 
 .dark .glass-input {
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark .glass-input::placeholder {
   color: #6b7280;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .glass-input:focus {
-  background: rgba(0, 0, 0, 0.03);
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+  background: rgba(0, 0, 0, 0.02);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(109, 92, 224, 0.15);
 }
 
 .dark .glass-input:focus {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(139, 92, 246, 0.6);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(109, 92, 224, 0.15);
 }
 
 /* Glow accent (restrained) */

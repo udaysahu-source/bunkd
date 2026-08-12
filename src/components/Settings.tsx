@@ -42,6 +42,7 @@ export default function Settings() {
 
   const [cycleStartDay, setCycleStartDay] = useState("1");
   const [targetPercentage, setTargetPercentage] = useState("75");
+  const [isCustomTarget, setIsCustomTarget] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   
   const [saveStatus, setSaveStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -66,7 +67,9 @@ export default function Settings() {
     if (settings) {
       setTimeout(() => {
         setCycleStartDay(settings.cycleStartDay.toString());
-        setTargetPercentage(settings.targetPercentage.toString());
+        const pctStr = settings.targetPercentage.toString();
+        setTargetPercentage(pctStr);
+        setIsCustomTarget(!["75", "80", "85", "90"].includes(pctStr));
       }, 0);
     }
   }, [settings]);
@@ -288,20 +291,6 @@ export default function Settings() {
                 />
               </div>
 
-              {/* Email Address (Read-only for visual/account identity) */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-purple-400" style={{ opacity: 0.7 }} />
-                  <span>Email Address</span>
-                </label>
-                <input
-                  type="email"
-                  disabled
-                  value={user?.email || ""}
-                  className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-500 dark:text-zinc-500 text-sm font-semibold focus:outline-none bg-black/[0.02] dark:bg-white/[0.01] cursor-not-allowed opacity-65"
-                />
-              </div>
-
               {/* Semester Tap Grid */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-555 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
@@ -413,77 +402,63 @@ export default function Settings() {
             <div className="space-y-4">
               {/* Target Percentage */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
                   <Target className="w-3.5 h-3.5 text-purple-400" />
                   <span>Target Attendance %</span>
                 </label>
                 
                 {/* Segmented Quick Pickers */}
-                <div className="grid grid-cols-4 gap-2 mb-2.5">
+                <div className="grid grid-cols-5 gap-2 mb-2.5">
                   {["75", "80", "85", "90"].map((val) => (
                     <button
                       key={val}
                       type="button"
-                      onClick={() => setTargetPercentage(val)}
+                      onClick={() => {
+                        setTargetPercentage(val);
+                        setIsCustomTarget(false);
+                      }}
                       className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                        targetPercentage === val
-                          ? "bg-purple-600 text-white border-purple-500 shadow-sm"
-                          : "bg-white/[0.03] text-zinc-400 border-white/5 hover:text-white"
+                        targetPercentage === val && !isCustomTarget
+                          ? "bg-purple-600 text-white border-purple-650 shadow-sm"
+                          : "bg-white/[0.03] text-zinc-500 dark:text-zinc-400 border-black/5 dark:border-white/5 hover:text-zinc-700 dark:hover:text-white"
                       }`}
                     >
                       {val}%
                     </button>
                   ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomTarget(true);
+                    }}
+                    className={`py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                      isCustomTarget
+                        ? "bg-purple-600 text-white border-purple-650 shadow-sm"
+                        : "bg-white/[0.03] text-zinc-500 dark:text-zinc-400 border-black/5 dark:border-white/5 hover:text-zinc-700 dark:hover:text-white"
+                    }`}
+                  >
+                    Other
+                  </button>
                 </div>
 
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    required
-                    value={targetPercentage}
-                    onFocus={handleInputFocus}
-                    onChange={(e) => setTargetPercentage(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-800 dark:text-white text-sm font-semibold focus:outline-none"
-                    placeholder="Custom Target"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-bold">%</span>
-                </div>
+                {isCustomTarget && (
+                  <div className="relative mb-2">
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      required
+                      value={targetPercentage}
+                      onFocus={handleInputFocus}
+                      onChange={(e) => setTargetPercentage(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-800 dark:text-white text-sm font-semibold focus:outline-none"
+                      placeholder="Custom Target"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-500 font-bold">%</span>
+                  </div>
+                )}
                 <p className="text-xs text-zinc-550 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
                   Most Indian colleges enforce 75% or 80% minimum attendance.
-                </p>
-              </div>
-
-              {/* Cycle Start Day */}
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
-                  <CalendarRange className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Cycle Start Day</span>
-                </label>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    disabled={profileLoading}
-                    onClick={() => setCycleStartDay(prev => Math.max(1, parseInt(prev || "1") - 1).toString())}
-                    className="w-11 h-11 rounded-xl glass-inner flex items-center justify-center text-zinc-700 dark:text-white font-bold hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer border border-transparent"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <span className="text-sm font-extrabold text-zinc-800 dark:text-white w-10 text-center">
-                    {cycleStartDay}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={profileLoading}
-                    onClick={() => setCycleStartDay(prev => Math.min(28, parseInt(prev || "1") + 1).toString())}
-                    className="w-11 h-11 rounded-xl glass-inner flex items-center justify-center text-zinc-700 dark:text-white font-bold hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer border border-transparent"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-                <p className="text-xs text-zinc-550 dark:text-zinc-500 mt-2 pl-1 leading-relaxed">
-                  Monthly cycle start day (1–28) for reset tracking.
                 </p>
               </div>
             </div>

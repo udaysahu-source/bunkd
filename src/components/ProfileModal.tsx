@@ -50,6 +50,25 @@ export default function ProfileModal() {
     }
   };
 
+  const handleSkip = async () => {
+    setLoading(true);
+    try {
+      const defaultName = user?.displayName || "Student";
+      await saveProfile(
+        defaultName,
+        1, // default Semester 1
+        "General", // default Department
+        null // default College
+      );
+      showToast("Profile initialized with defaults. Modify it anytime in Settings!", "info");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to initialize profile defaults.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <motion.div
@@ -63,7 +82,7 @@ export default function ProfileModal() {
         <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-600/5 blur-[50px] rounded-full pointer-events-none" />
 
         <div className="mb-6 text-center relative z-10">
-          <div className="w-12 h-12 bg-purple-500/10 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5 border border-purple-500/20">
+          <div className="w-12 h-12 bg-purple-500/10 dark:bg-purple-500/10 text-purple-650 dark:text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5 border border-purple-500/20">
             <GraduationCap className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
@@ -135,9 +154,9 @@ export default function ProfileModal() {
 
           {/* College Name (Optional) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-500 mb-2 pl-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-550 mb-2 pl-1 flex items-center gap-1.5">
               <School className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-550" />
-              <span>College / University <span className="text-xs lowercase font-normal text-zinc-400 dark:text-zinc-500 pl-0.5">(optional)</span></span>
+              <span>College / University <span className="text-xs lowercase font-normal text-zinc-400 dark:text-zinc-550 pl-0.5">(optional)</span></span>
             </label>
             <input
               type="text"
@@ -149,7 +168,7 @@ export default function ProfileModal() {
             />
           </div>
 
-          <div className="sticky bottom-0 bg-white/90 dark:bg-bunkd-card-dark/95 backdrop-blur-md pt-4 pb-2 z-10 border-t border-black/5 dark:border-white/5 mt-6">
+          <div className="sticky bottom-0 bg-white/90 dark:bg-bunkd-card-dark/95 backdrop-blur-md pt-4 pb-2 z-10 border-t border-black/5 dark:border-white/5 mt-6 space-y-2">
             <motion.button
               type="submit"
               disabled={loading}
@@ -166,6 +185,14 @@ export default function ProfileModal() {
                 </>
               )}
             </motion.button>
+            <button
+              type="button"
+              disabled={loading}
+              onClick={handleSkip}
+              className="w-full py-2.5 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-zinc-500 dark:text-zinc-400 font-bold rounded-xl text-xs transition-colors cursor-pointer border border-transparent"
+            >
+              Skip Setup for Now
+            </button>
           </div>
         </form>
       </motion.div>
