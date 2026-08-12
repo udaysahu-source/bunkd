@@ -105,7 +105,8 @@ export default function Dashboard() {
     settings,
     overallMetrics,
     logAttendance,
-    showToast
+    showToast,
+    profile
   } = useStore();
 
   const [showLogModal, setShowLogModal] = useState(false);
@@ -179,6 +180,34 @@ export default function Dashboard() {
       e.target.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 150);
   };
+
+  // Last Updated computation based on daily logs
+  const lastUpdatedText = React.useMemo(() => {
+    const semesterRecords = records.filter(r => (r.semester ?? profile?.semester) === profile?.semester);
+    const dailyRecords = semesterRecords.filter(r => r.type !== "baseline");
+    const baselineRecords = semesterRecords.filter(r => r.type === "baseline");
+    
+    if (dailyRecords.length === 0) {
+      if (baselineRecords.length > 0) return "Baseline configured";
+      return "No logs yet";
+    }
+    
+    const latestRecord = dailyRecords.reduce((latest, record) => {
+      return record.dateTimestamp > latest.dateTimestamp ? record : latest;
+    }, dailyRecords[0]);
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayMidnight = today.getTime();
+    
+    const diffTime = todayMidnight - latestRecord.dateTimestamp;
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Last updated: Today";
+    if (diffDays === 1) return "Last updated: Yesterday";
+    if (diffDays > 1) return `Last updated: ${diffDays} days ago`;
+    return "Last updated: Future log";
+  }, [records, profile?.semester]);
 
   // Today calculations
   const todayDocId = dateToDocId(new Date());
@@ -315,7 +344,12 @@ export default function Dashboard() {
 
         {/* Ring & Data Side-by-side or Centered */}
         <div className="flex items-center justify-center gap-6 w-full py-2">
-          <ProgressRing percentage={metrics.percentage} target={target} />
+          <div className="flex flex-col items-center gap-1.5">
+            <ProgressRing percentage={metrics.percentage} target={target} />
+            <span className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 select-none">
+              {lastUpdatedText}
+            </span>
+          </div>
           
           <div className="flex flex-col text-left space-y-1">
             <span className="text-xs font-extrabold uppercase tracking-widest text-zinc-450 dark:text-zinc-500">
@@ -413,10 +447,10 @@ export default function Dashboard() {
         <div className="space-y-4 pt-1">
           {currentTotal > 0 ? (
             <div className="space-y-3.5">
-              {/* Attended Row */}
-              <div className="flex items-start gap-3">
-                <span className="text-xs font-extrabold uppercase text-zinc-500 mt-2.5 w-16 shrink-0 text-right">
-                  Attended
+              {/* Attended Selection Row */}
+              <div className="flex flex-col gap-2.5 pl-1">
+                <span className="text-xs font-extrabold uppercase tracking-wide text-zinc-500">
+                  How many did you attend?
                 </span>
                 <div className="flex flex-wrap gap-2.5">
                   <button
@@ -431,43 +465,20 @@ export default function Dashboard() {
                   </button>
                   {Array.from({ length: currentTotal }).map((_, i) => {
                     const slotNum = i + 1;
-                    const isSelected = currentAttended >= slotNum;
+                    const isExactSelection = currentAttended === slotNum;
+                    const isPartiallyFilled = currentAttended > slotNum;
+                    
                     return (
                       <button
                         key={slotNum}
                         onClick={() => handleSelectAttended(slotNum)}
                         className={`w-11 h-11 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all cursor-pointer border ${
-                          isSelected
+                          isExactSelection
                             ? "bg-purple-650 border-purple-650 text-white shadow-md shadow-purple-500/20"
+                            : isPartiallyFilled
+                            ? "bg-purple-500/15 border-purple-500/25 text-purple-650 dark:text-purple-400 font-extrabold"
                             : "bg-gray-100 dark:bg-zinc-900 text-zinc-650 dark:text-zinc-400 border-gray-200/50 dark:border-zinc-800 hover:bg-gray-200"
                         }`}
-                      >
-                        {slotNum}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Bunked Row */}
-              <div className="flex items-start gap-3">
-                <span className="text-xs font-extrabold uppercase text-zinc-550 dark:text-zinc-500 mt-2.5 w-16 shrink-0 text-right">
-                  Bunked
-                </span>
-                <div className="flex flex-wrap gap-2.5">
-                  {Array.from({ length: currentTotal }).map((_, i) => {
-                    const slotNum = i + 1;
-                    const isBunked = slotNum > currentAttended;
-                    return (
-                      <button
-                        key={slotNum}
-                        onClick={() => handleSelectAttended(slotNum - 1)}
-                        className={`w-11 h-11 rounded-xl text-xs font-extrabold flex items-center justify-center transition-all cursor-pointer border ${
-                          isBunked
-                            ? "bg-red-500/10 border-red-500/20 text-red-650 dark:text-red-400 hover:bg-red-500/20"
-                            : "bg-gray-100 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-650 border-zinc-200/30 dark:border-zinc-850 opacity-30 cursor-not-allowed"
-                        }`}
-                        disabled={!isBunked}
                       >
                         {slotNum}
                       </button>

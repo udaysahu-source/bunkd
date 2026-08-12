@@ -36,7 +36,8 @@ export default function Settings() {
     showToast,
     profile,
     saveProfile,
-    updateProfileSemester
+    updateProfileSemester,
+    user
   } = useStore();
 
   const [cycleStartDay, setCycleStartDay] = useState("1");
@@ -284,6 +285,20 @@ export default function Settings() {
                   onChange={(e) => setProfileName(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-800 dark:text-white text-sm font-semibold focus:outline-none"
                   placeholder="Your Name"
+                />
+              </div>
+
+              {/* Email Address (Read-only for visual/account identity) */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-purple-400" style={{ opacity: 0.7 }} />
+                  <span>Email Address</span>
+                </label>
+                <input
+                  type="email"
+                  disabled
+                  value={user?.email || ""}
+                  className="w-full px-4 py-2.5 rounded-xl glass-input text-zinc-500 dark:text-zinc-500 text-sm font-semibold focus:outline-none bg-black/[0.02] dark:bg-white/[0.01] cursor-not-allowed opacity-65"
                 />
               </div>
 

@@ -10,8 +10,10 @@ import {
   XCircle,
   CheckCircle2,
   Trash2,
-  Plus
+  Plus,
+  AlertTriangle
 } from "lucide-react";
+import type { AttendanceRecord } from "../lib/attendanceMath";
 
 export default function Calendar() {
   const { records, logAttendance, deleteRecord, showToast, settings } = useStore();
@@ -26,6 +28,7 @@ export default function Calendar() {
   const [isHoliday, setIsHoliday] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<AttendanceRecord | null>(null);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -129,7 +132,7 @@ export default function Calendar() {
           Calendar
         </h2>
         <p className="text-zinc-550 dark:text-zinc-500 text-sm mt-1">
-          Tap a date to update your status
+          Tap a date to update your status, log classes, or override holidays
         </p>
       </div>
 
@@ -246,6 +249,28 @@ export default function Calendar() {
             })}
           </motion.div>
         </AnimatePresence>
+
+        {/* Calendar Legend */}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-bold text-zinc-550 dark:text-zinc-400 mt-5 pt-4 border-t border-black/5 dark:border-white/5 select-none">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-emerald-500/15 border border-emerald-500/30" />
+            <span>On Track (≥{target}%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-rose-500/15 border border-rose-500/30" />
+            <span>Below Target (&lt;{target}%)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
+              <Sun className="w-2.5 h-2.5 text-amber-400" />
+            </div>
+            <span>Holiday / Weekend</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-white/[0.02] border border-white/5" />
+            <span>No Log</span>
+          </div>
+        </div>
       </div>
 
       {/* Recent Log list inside Calendar */}
@@ -332,10 +357,10 @@ export default function Calendar() {
                           Edit
                         </motion.button>
                         <motion.button
-                          onClick={() => record.id && deleteRecord(record.id)}
+                          onClick={() => record.id && setRecordToDelete(record)}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.95 }}
-                          className="p-2 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                          className="p-2 text-zinc-455 dark:text-zinc-500 hover:text-red-550 dark:hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 opacity-80 cursor-pointer"
                           title="Delete"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -512,6 +537,76 @@ export default function Calendar() {
                   </div>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modal for Delete Record */}
+      <AnimatePresence>
+        {recordToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setRecordToDelete(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-md"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="w-full max-w-sm glass-card-elevated rounded-3xl p-6 space-y-4 z-10 glass-shimmer"
+            >
+              <div className="flex items-center gap-3 text-red-450 dark:text-red-450">
+                <div className="p-3 bg-red-500/10 rounded-xl">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h4 className="text-base font-extrabold text-gray-900 dark:text-white">Delete Attendance Log?</h4>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">This action cannot be undone</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-zinc-650 dark:text-zinc-300 leading-relaxed font-medium">
+                Are you sure you want to permanently delete the attendance record for{" "}
+                <strong>
+                  {new Date(recordToDelete.dateTimestamp).toLocaleDateString("en-US", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </strong>
+                ?
+              </p>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setRecordToDelete(null)}
+                  className="flex-1 py-3 glass-inner text-zinc-700 dark:text-zinc-300 font-bold rounded-xl text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer border border-zinc-200 dark:border-zinc-800"
+                >
+                  Cancel
+                </button>
+                <motion.button
+                  type="button"
+                  onClick={async () => {
+                    if (recordToDelete.id) {
+                      await deleteRecord(recordToDelete.id);
+                      showToast("Record deleted successfully", "info");
+                    }
+                    setRecordToDelete(null);
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Yes, Delete</span>
+                </motion.button>
+              </div>
             </motion.div>
           </div>
         )}
