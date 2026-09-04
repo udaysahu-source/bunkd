@@ -3,19 +3,17 @@
 import React, { useState, useEffect } from "react";
 import { useStore } from "../store/useStore";
 import { motion } from "framer-motion";
-import { GraduationCap, BookOpen, School, User, Save, RefreshCw } from "lucide-react";
+import { GraduationCap, BookOpen, School, User, Save } from "lucide-react";
 
 export default function ProfileModal() {
   const { user, saveProfile, showToast } = useStore();
   
-  // State variables
   const [name, setName] = useState("");
   const [semester, setSemester] = useState<number>(1);
   const [department, setDepartment] = useState("");
   const [collegeName, setCollegeName] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Autofill name from auth provider if available
   useEffect(() => {
     if (user?.displayName) {
       setName(user.displayName);
@@ -41,9 +39,8 @@ export default function ProfileModal() {
         department.trim(),
         collegeName.trim() || null
       );
-      showToast("Profile set up successfully! Welcome to Bunkd.", "success");
-    } catch (err) {
-      console.error(err);
+      showToast("Academic profile setup completed! Welcome to Bunkd.", "success");
+    } catch {
       showToast("Failed to save profile. Please try again.", "error");
     } finally {
       setLoading(false);
@@ -56,13 +53,12 @@ export default function ProfileModal() {
       const defaultName = user?.displayName || "Student";
       await saveProfile(
         defaultName,
-        1, // default Semester 1
-        "General", // default Department
-        null // default College
+        1,
+        "General",
+        null
       );
-      showToast("Profile initialized with defaults. Modify it anytime in Settings!", "info");
-    } catch (err) {
-      console.error(err);
+      showToast("Profile initialized with defaults. Modify anytime in Settings!", "info");
+    } catch {
       showToast("Failed to initialize profile defaults.", "error");
     } finally {
       setLoading(false);
@@ -72,31 +68,25 @@ export default function ProfileModal() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 15 }}
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{ type: "spring", duration: 0.4 }}
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-bunkd-card-dark border border-gray-200/40 dark:border-bunkd-border-dark/60 shadow-2xl rounded-3xl p-6 sm:p-7 flex flex-col z-10 relative"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto app-card bg-white dark:bg-[#1a162b] p-6 sm:p-7 flex flex-col z-10 shadow-2xl relative"
       >
-        {/* Decorative glows */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-purple-500/5 blur-[50px] rounded-full pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-purple-600/5 blur-[50px] rounded-full pointer-events-none" />
-
-        <div className="mb-6 text-center relative z-10">
-          <div className="w-12 h-12 bg-purple-500/10 dark:bg-purple-500/10 text-purple-650 dark:text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-3.5 border border-purple-500/20">
+        <div className="mb-6 text-center">
+          <div className="w-12 h-12 bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-purple-200 dark:border-purple-900">
             <GraduationCap className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             Academic Profile Setup
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed font-medium">
+          <p className="text-xs text-zinc-500 mt-1">
             Complete your profile to customize Bunkd for your curriculum.
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-          {/* Full Name */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
               <User className="w-3.5 h-3.5 text-purple-500" />
               <span>Full Name</span>
             </label>
@@ -105,28 +95,27 @@ export default function ProfileModal() {
               required
               disabled={loading}
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. John Doe"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200/60 dark:border-zinc-800/60 bg-gray-50 dark:bg-bunkd-bg-dark/50 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white text-sm font-semibold transition-all"
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Alex Johnson"
+              className="form-input"
             />
           </div>
 
-          {/* Semester Tap Grid */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-550 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
               <GraduationCap className="w-3.5 h-3.5 text-purple-500" />
               <span>Current Semester</span>
             </label>
             <div className="grid grid-cols-4 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(sem => (
                 <button
                   key={sem}
                   type="button"
                   onClick={() => setSemester(sem)}
-                  className={`py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                     semester === sem
-                      ? "bg-purple-600 border-purple-600 text-white shadow-md shadow-purple-500/10"
-                      : "bg-gray-100 dark:bg-zinc-900 text-zinc-700 dark:text-zinc-400 border-gray-200/60 dark:border-zinc-800/60 hover:bg-gray-200 dark:hover:bg-zinc-800/80"
+                      ? "bg-purple-600 border-purple-600 text-white shadow-xs"
+                      : "bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100"
                   }`}
                 >
                   Sem {sem}
@@ -135,9 +124,8 @@ export default function ProfileModal() {
             </div>
           </div>
 
-          {/* Department / Major */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-555 dark:text-zinc-400 mb-2 pl-1 flex items-center gap-1.5">
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5 text-purple-500" />
               <span>Department / Major</span>
             </label>
@@ -146,52 +134,43 @@ export default function ProfileModal() {
               required
               disabled={loading}
               value={department}
-              onChange={(e) => setDepartment(e.target.value.toUpperCase())}
-              placeholder="e.g. CSE, Mechanical, Business"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200/60 dark:border-zinc-800/60 bg-gray-50 dark:bg-bunkd-bg-dark/50 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white text-sm font-semibold transition-all uppercase"
+              onChange={e => setDepartment(e.target.value)}
+              placeholder="e.g. Computer Science & Engineering"
+              className="form-input"
             />
           </div>
 
-          {/* College Name (Optional) */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-550 mb-2 pl-1 flex items-center gap-1.5">
-              <School className="w-3.5 h-3.5 text-zinc-400 dark:text-zinc-550" />
-              <span>College / University <span className="text-xs lowercase font-normal text-zinc-400 dark:text-zinc-550 pl-0.5">(optional)</span></span>
+            <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5 flex items-center gap-1.5">
+              <School className="w-3.5 h-3.5 text-purple-500" />
+              <span>College / University (Optional)</span>
             </label>
             <input
               type="text"
               disabled={loading}
               value={collegeName}
-              onChange={(e) => setCollegeName(e.target.value)}
-              placeholder="e.g. IIT Delhi, Harvard"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200/60 dark:border-zinc-800/60 bg-gray-50 dark:bg-bunkd-bg-dark/50 focus:border-purple-500 dark:focus:border-purple-500 focus:outline-none text-gray-900 dark:text-white text-sm font-semibold transition-all"
+              onChange={e => setCollegeName(e.target.value)}
+              placeholder="e.g. Stanford University"
+              className="form-input"
             />
           </div>
 
-          <div className="sticky bottom-0 bg-white/90 dark:bg-bunkd-card-dark/95 backdrop-blur-md pt-4 pb-2 z-10 border-t border-black/5 dark:border-white/5 mt-6 space-y-2">
-            <motion.button
+          <div className="pt-3 space-y-2">
+            <button
               type="submit"
               disabled={loading}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 dark:from-purple-600 dark:to-purple-700 text-white font-bold rounded-xl shadow-lg shadow-purple-500/10 hover:shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer text-sm shadow-md"
+              className="w-full btn-primary py-2.5"
             >
-              {loading ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Save Profile</span>
-                </>
-              )}
-            </motion.button>
+              <Save className="w-4 h-4" />
+              <span>{loading ? "Saving..." : "Save Academic Profile"}</span>
+            </button>
             <button
               type="button"
-              disabled={loading}
               onClick={handleSkip}
-              className="w-full py-2.5 bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-zinc-500 dark:text-zinc-400 font-bold rounded-xl text-xs transition-colors cursor-pointer border border-transparent"
+              disabled={loading}
+              className="w-full text-center text-xs text-zinc-400 hover:text-zinc-600 py-1 cursor-pointer"
             >
-              Skip Setup for Now
+              Skip for now (use defaults)
             </button>
           </div>
         </form>

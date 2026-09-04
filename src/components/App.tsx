@@ -5,21 +5,30 @@ import { useStore } from "../store/useStore";
 import AuthForm from "./AuthForm";
 import Dashboard from "./Dashboard";
 import Calendar from "./Calendar";
+import Insights from "./Insights";
+import Timetable from "./Timetable";
 import Settings from "./Settings";
 import FirebaseSetupGuide from "./FirebaseSetupGuide";
 import InstallPrompt from "./InstallPrompt";
 import ProfileModal from "./ProfileModal";
+import GlobalToast from "./GlobalToast";
 import { motion, AnimatePresence } from "framer-motion";
-import { LayoutDashboard, CalendarDays, Settings as SettingsIcon } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  TrendingUp,
+  CalendarClock,
+  Sliders,
+  GraduationCap
+} from "lucide-react";
+
+type NavigationTab = "dashboard" | "calendar" | "insights" | "timetable" | "settings";
 
 export default function App() {
-  const { user, authLoading, isFirebaseConfigured, initialize, profile, profileLoading } = useStore();
-  const [activeTab, setActiveTab] = useState<"dashboard" | "calendar" | "settings">("dashboard");
-
-  console.log("App.tsx: Render", { authLoading, user, isFirebaseConfigured });
+  const { user, authLoading, isFirebaseConfigured, initialize, profile, profileLoading, settings } = useStore();
+  const [activeTab, setActiveTab] = useState<NavigationTab>("dashboard");
 
   useEffect(() => {
-    console.log("App.tsx: useEffect [initialize] running");
     const cleanup = initialize();
     
     // Load theme configuration
@@ -46,27 +55,15 @@ export default function App() {
 
   if (authLoading || (user && profileLoading)) {
     return (
-      <div className="min-h-screen bg-bunkd-bg-dark glass-bg-mesh flex flex-col items-center justify-center">
-        <motion.div
-          animate={{ scale: [0.95, 1, 0.95], opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-          className="flex flex-col items-center gap-4"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-            className="w-14 h-14 glass-button-brand rounded-2xl flex items-center justify-center glow-purple"
-          >
-            <span className="text-white font-bold text-lg">B</span>
-          </motion.div>
-          <motion.span
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="text-xs font-bold uppercase tracking-widest text-zinc-500"
-          >
-            Loading Bunkd
-          </motion.span>
-        </motion.div>
+      <div className="min-h-screen bg-zinc-50 dark:bg-[#12101e] flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 bg-purple-600 rounded-2xl flex items-center justify-center text-white font-black text-xl shadow-md">
+            B
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
+            Loading Bunkd...
+          </span>
+        </div>
       </div>
     );
   }
@@ -83,12 +80,24 @@ export default function App() {
     return <ProfileModal />;
   }
 
+  const navItems = [
+    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+    { id: "calendar", label: "Calendar & Logs", icon: CalendarDays },
+    { id: "insights", label: "Analytics", icon: TrendingUp },
+    { id: "timetable", label: "Timetable", icon: CalendarClock },
+    { id: "settings", label: "Settings", icon: Sliders },
+  ] as const;
+
   const renderActiveView = () => {
     switch (activeTab) {
       case "dashboard":
         return <Dashboard key="dashboard" />;
       case "calendar":
         return <Calendar key="calendar" />;
+      case "insights":
+        return <Insights key="insights" />;
+      case "timetable":
+        return <Timetable key="timetable" />;
       case "settings":
         return <Settings key="settings" />;
       default:
@@ -97,158 +106,131 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-bunkd-bg-dark glass-bg-mesh text-zinc-900 dark:text-white flex flex-col relative transition-colors duration-300">
-      {/* Ambient glow orbs — decorative background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-32 -left-32 w-[400px] h-[400px] bg-purple-600/[0.05] dark:bg-purple-600/[0.07] blur-[120px] rounded-full" />
-        <div className="absolute top-1/2 -right-24 w-[300px] h-[300px] bg-purple-500/[0.03] dark:bg-purple-500/[0.05] blur-[100px] rounded-full" />
-        <div className="absolute -bottom-20 left-1/3 w-[350px] h-[350px] bg-violet-600/[0.03] dark:bg-violet-600/[0.04] blur-[110px] rounded-full" />
-      </div>
-
+    <div className="min-h-screen bg-zinc-50 dark:bg-[#12101e] text-zinc-900 dark:text-zinc-100 flex flex-col md:flex-row transition-colors duration-200">
+      <GlobalToast />
       <InstallPrompt />
 
-      {/* ── Glass Header ── */}
-      <header className="sticky top-0 glass-header z-40">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 glass-button-brand rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white font-bold text-sm">B</span>
+      {/* ──── DESKTOP SIDEBAR NAVIGATION (md and above) ──── */}
+      <aside className="hidden md:flex flex-col w-64 app-sidebar shrink-0 p-5 justify-between sticky top-0 h-screen z-30">
+        <div className="space-y-6">
+          {/* Logo & Brand Header */}
+          <div className="flex items-center gap-3 px-2">
+            <div className="w-9 h-9 bg-purple-600 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
+              B
             </div>
-            <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-white">
-              Bunkd
-            </span>
+            <div>
+              <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-100 block">
+                Bunkd
+              </span>
+              <span className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 block -mt-0.5">
+                Attendance Intelligence
+              </span>
+            </div>
           </div>
+
+          {/* Student Status Summary Card */}
+          <div className="p-3 rounded-xl bg-zinc-100/80 dark:bg-[#151224] border border-zinc-200 dark:border-[#2c2547] space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
+                {profile?.name || "Student"}
+              </span>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                Sem {profile?.semester}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-zinc-500 dark:text-zinc-400">
+              <span>{profile?.department || "General"}</span>
+              <span>Target: {settings?.targetPercentage ?? 75}%</span>
+            </div>
+          </div>
+
+          {/* Nav List */}
+          <nav className="space-y-1">
+            {navItems.map(({ id, label, icon: Icon }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-purple-600 text-white shadow-xs"
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 hover:text-zinc-900 dark:hover:text-zinc-200"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+
+        {/* Footer Meta */}
+        <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-400 flex items-center justify-between px-2">
+          <span>Bunkd v1.2</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-500" title="System Online" />
+        </div>
+      </aside>
+
+      {/* ──── MOBILE TOP HEADER (below md) ──── */}
+      <header className="md:hidden sticky top-0 app-header z-40 px-4 h-14 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-xs">
+            B
+          </div>
+          <span className="font-bold text-base tracking-tight text-zinc-900 dark:text-zinc-100">
+            Bunkd
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+            Sem {profile?.semester}
+          </span>
+          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900">
+            {settings?.targetPercentage ?? 75}%
+          </span>
         </div>
       </header>
 
-      {/* ── Main Content ── */}
-      <main className="flex-1 max-w-2xl w-full mx-auto px-4 pt-6 pb-28 relative z-10">
+      {/* ──── MAIN WORKSPACE AREA ──── */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-24 md:pb-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
           >
             {renderActiveView()}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* ── Glass Bottom Navigation ── */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 pb-6 pointer-events-none z-50">
-        {/* Fade gradient */}
-        <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-bunkd-bg-dark via-white/80 dark:via-bunkd-bg-dark/80 to-transparent pointer-events-none" />
-        
-        <nav className="max-w-md mx-auto glass-nav rounded-2xl p-1.5 flex items-center justify-between pointer-events-auto relative glass-shimmer">
-          {/* Dashboard Tab */}
-          <motion.button
-            onClick={() => setActiveTab("dashboard")}
-            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
-            whileTap={{ scale: 0.95 }}
-          >
-            {activeTab === "dashboard" && (
-              <motion.div
-                layoutId="active-tab-indicator"
-                className="absolute inset-0 rounded-xl -z-10"
-                style={{
-                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
-                  border: "1px solid rgba(139, 92, 246, 0.25)",
-                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
-                }}
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              />
-            )}
-            <LayoutDashboard
-              className={`w-5 h-5 transition-all duration-200 ${
-                activeTab === "dashboard"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            />
-            <span
-              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
-                activeTab === "dashboard"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            >
-              Home
-            </span>
-          </motion.button>
-
-          {/* Calendar Tab */}
-          <motion.button
-            onClick={() => setActiveTab("calendar")}
-            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
-            whileTap={{ scale: 0.95 }}
-          >
-            {activeTab === "calendar" && (
-              <motion.div
-                layoutId="active-tab-indicator"
-                className="absolute inset-0 rounded-xl -z-10"
-                style={{
-                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
-                  border: "1px solid rgba(139, 92, 246, 0.25)",
-                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
-                }}
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              />
-            )}
-            <CalendarDays
-              className={`w-5 h-5 transition-all duration-200 ${
-                activeTab === "calendar"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            />
-            <span
-              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
-                activeTab === "calendar"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            >
-              Calendar
-            </span>
-          </motion.button>
-
-          {/* Settings Tab */}
-          <motion.button
-            onClick={() => setActiveTab("settings")}
-            className="flex-1 flex flex-col items-center py-2.5 rounded-xl relative transition-all group cursor-pointer"
-            whileTap={{ scale: 0.95 }}
-          >
-            {activeTab === "settings" && (
-              <motion.div
-                layoutId="active-tab-indicator"
-                className="absolute inset-0 rounded-xl -z-10"
-                style={{
-                  background: "linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(139, 92, 246, 0.08))",
-                  border: "1px solid rgba(139, 92, 246, 0.25)",
-                  boxShadow: "0 0 24px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05)"
-                }}
-                transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              />
-            )}
-            <SettingsIcon
-              className={`w-5 h-5 transition-all duration-200 ${
-                activeTab === "settings"
-                  ? "text-purple-650 dark:text-purple-400 scale-110"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            />
-            <span
-              className={`text-xs font-bold mt-1.5 tracking-wider uppercase transition-colors duration-200 ${
-                activeTab === "settings"
-                  ? "text-purple-650 dark:text-purple-400"
-                  : "text-zinc-450 dark:text-zinc-500 group-hover:text-zinc-650 dark:group-hover:text-zinc-400"
-              }`}
-            >
-              Settings
-            </span>
-          </motion.button>
+      {/* ──── MOBILE BOTTOM NAVIGATION (below md) ──── */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 app-nav-bottom px-2 py-1.5">
+        <nav className="flex items-center justify-around">
+          {navItems.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex-1 flex flex-col items-center py-1.5 rounded-xl transition-all cursor-pointer ${
+                  isActive
+                    ? "text-purple-600 dark:text-purple-400 font-bold"
+                    : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? "scale-110" : ""}`} />
+                <span className="text-[10px] mt-1 tracking-tight">
+                  {id === "dashboard" ? "Home" : id === "calendar" ? "Logs" : id === "insights" ? "Insights" : id === "timetable" ? "Schedule" : "Settings"}
+                </span>
+              </button>
+            );
+          })}
         </nav>
       </div>
     </div>

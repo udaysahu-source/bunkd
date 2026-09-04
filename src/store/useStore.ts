@@ -24,6 +24,18 @@ export interface UserProfile {
   created_at: number;
 }
 
+export type WeekdayTimetable = Record<number, number>; // 0: Sun, 1: Mon, ... 6: Sat
+
+const DEFAULT_TIMETABLE: WeekdayTimetable = {
+  0: 0, // Sunday
+  1: 5, // Monday
+  2: 5, // Tuesday
+  3: 5, // Wednesday
+  4: 5, // Thursday
+  5: 5, // Friday
+  6: 0  // Saturday
+};
+
 interface AppState {
   isInitialized: boolean;
   isFirebaseConfigured: boolean;
@@ -36,6 +48,7 @@ interface AppState {
     cycleStartDay: number;
     targetPercentage: number;
   } | null;
+  timetable: WeekdayTimetable;
   records: AttendanceRecord[];
   profile: UserProfile | null;
   
@@ -54,11 +67,14 @@ interface AppState {
   saveProfile: (name: string, semester: number, department: string | null, college_name?: string | null) => Promise<void>;
   updateProfileSemester: (semester: number, resetBaseline: boolean) => Promise<void>;
   updateSettings: (cycleStartDay: number, targetPercentage: number) => Promise<void>;
+  updateTimetable: (timetable: WeekdayTimetable) => Promise<void>;
   logAttendance: (date: Date, attended: number, total: number, isHoliday: boolean) => Promise<void>;
   logBaseline: (attended: number, total: number) => Promise<void>;
   toggleHoliday: (date: Date) => Promise<void>;
   deleteRecord: (dateStr: string) => Promise<void>;
   clearAllAttendance: () => Promise<void>;
+  exportAttendanceCSV: () => string;
+  importAttendanceRecords: (importedRecords: AttendanceRecord[]) => Promise<number>;
 }
 
 // Helpers
@@ -87,6 +103,7 @@ export const useStore = create<AppState>((set, get) => {
   let unsubscribeSettings: (() => void) | null = null;
   let unsubscribeAttendance: (() => void) | null = null;
   let unsubscribeProfile: (() => void) | null = null;
+  let unsubscribeTimetable: (() => void) | null = null;
 
   function calculateAndSetMetrics(records: AttendanceRecord[], cycleStartDay: number, targetPercentage: number, currentSemester: number) {
     const semesterRecords = records.filter(
@@ -115,6 +132,7 @@ export const useStore = create<AppState>((set, get) => {
     recordsLoading: false,
     profileLoading: true,
     settings: null,
+    timetable: DEFAULT_TIMETABLE,
     records: [],
     profile: null,
     overallMetrics: DEFAULT_METRICS,
@@ -133,33 +151,33 @@ export const useStore = create<AppState>((set, get) => {
       }
       set({ isInitialized: true });
 
-      console.log("useStore.ts: initialize action called (first time setup)", { hasAuth: !!auth, hasDb: !!db });
+      console.log("useStore.ts: initialize action called", { hasAuth: !!auth, hasDb: !!db });
       const currentAuth = auth;
       const currentDb = db;
       if (!currentAuth || !currentDb) {
-        console.log("useStore.ts: Firebase not configured. Setting authLoading to false");
         set({ authLoading: false, isFirebaseConfigured: false });
         return () => {};
       }
 
       onAuthStateChanged(currentAuth, (user) => {
-        console.log("useStore.ts: onAuthStateChanged resolved", { userEmail: user?.email ?? null });
         const prevUser = get().user;
         set({ user, authLoading: false });
 
         if (user) {
           if (user.isAnonymous) {
-            // Cleanup database listeners if switching from a registered user
             if (unsubscribeSettings) { unsubscribeSettings(); unsubscribeSettings = null; }
             if (unsubscribeAttendance) { unsubscribeAttendance(); unsubscribeAttendance = null; }
             if (unsubscribeProfile) { unsubscribeProfile(); unsubscribeProfile = null; }
+            if (unsubscribeTimetable) { unsubscribeTimetable(); unsubscribeTimetable = null; }
 
             set({ settingsLoading: true, recordsLoading: true, profileLoading: true });
-            // Load settings, attendance, and profile from localStorage for guest
             try {
               const localSettingsStr = localStorage.getItem("bunkd_guest_settings");
               const defaultSettings = { cycleStartDay: 1, targetPercentage: 75 };
               const settings = localSettingsStr ? JSON.parse(localSettingsStr) : defaultSettings;
+
+              const localTimetableStr = localStorage.getItem("bunkd_guest_timetable");
+              const timetable = localTimetableStr ? JSON.parse(localTimetableStr) : DEFAULT_TIMETABLE;
 
               const localRecordsStr = localStorage.getItem("bunkd_guest_attendance");
               const records = localRecordsStr ? JSON.parse(localRecordsStr) : [];
@@ -167,24 +185,23 @@ export const useStore = create<AppState>((set, get) => {
               const localProfileStr = localStorage.getItem("bunkd_guest_profile");
               const profile: UserProfile | null = localProfileStr ? JSON.parse(localProfileStr) : null;
 
-              set({ settings, records, profile, settingsLoading: false, recordsLoading: false, profileLoading: false });
+              set({ settings, timetable, records, profile, settingsLoading: false, recordsLoading: false, profileLoading: false });
               calculateAndSetMetrics(records, settings.cycleStartDay, settings.targetPercentage, profile?.semester ?? 1);
             } catch (err) {
               console.error("Failed to load guest data from localStorage", err);
-              set({ settings: { cycleStartDay: 1, targetPercentage: 75 }, records: [], profile: null, settingsLoading: false, recordsLoading: false, profileLoading: false });
+              set({ settings: { cycleStartDay: 1, targetPercentage: 75 }, timetable: DEFAULT_TIMETABLE, records: [], profile: null, settingsLoading: false, recordsLoading: false, profileLoading: false });
             }
             return;
           }
 
-          // If we already have listeners active for this user, do not recreate them
           if (prevUser && prevUser.uid === user.uid && (unsubscribeSettings || unsubscribeAttendance || unsubscribeProfile)) {
             return;
           }
 
-          // Cleanup previous listeners just in case
           if (unsubscribeSettings) { unsubscribeSettings(); unsubscribeSettings = null; }
           if (unsubscribeAttendance) { unsubscribeAttendance(); unsubscribeAttendance = null; }
           if (unsubscribeProfile) { unsubscribeProfile(); unsubscribeProfile = null; }
+          if (unsubscribeTimetable) { unsubscribeTimetable(); unsubscribeTimetable = null; }
 
           set({ settingsLoading: true, recordsLoading: true, profileLoading: true });
 
@@ -204,7 +221,6 @@ export const useStore = create<AppState>((set, get) => {
               };
               set({ profile, profileLoading: false });
 
-              // Recalculate metrics with current profile semester
               const currentRecords = get().records;
               const currentSettings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
               calculateAndSetMetrics(currentRecords, currentSettings.cycleStartDay, currentSettings.targetPercentage, profile.semester);
@@ -227,12 +243,10 @@ export const useStore = create<AppState>((set, get) => {
               };
               set({ settings, settingsLoading: false });
               
-              // Recalculate metrics with new settings
               const currentRecords = get().records;
               const currentProfile = get().profile;
               calculateAndSetMetrics(currentRecords, settings.cycleStartDay, settings.targetPercentage, currentProfile?.semester ?? 1);
             } else {
-              // Create default settings if not exists
               const defaultSettings = { cycleStartDay: 1, targetPercentage: 75 };
               setDoc(settingsRef, defaultSettings).catch(console.error);
               set({ settings: defaultSettings, settingsLoading: false });
@@ -242,7 +256,27 @@ export const useStore = create<AppState>((set, get) => {
             set({ settingsLoading: false });
           });
 
-          // 3. Listen to Attendance Records
+          // 3. Listen to Timetable Schedule
+          const timetableRef = doc(currentDb, "users", user.uid, "settings", "timetable");
+          unsubscribeTimetable = onSnapshot(timetableRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              const timetable: WeekdayTimetable = {
+                0: data[0] ?? 0,
+                1: data[1] ?? 5,
+                2: data[2] ?? 5,
+                3: data[3] ?? 5,
+                4: data[4] ?? 5,
+                5: data[5] ?? 5,
+                6: data[6] ?? 0
+              };
+              set({ timetable });
+            } else {
+              set({ timetable: DEFAULT_TIMETABLE });
+            }
+          });
+
+          // 4. Listen to Attendance Records
           const attendanceRef = collection(currentDb, "users", user.uid, "attendance");
           unsubscribeAttendance = onSnapshot(attendanceRef, (colSnap) => {
             const records: AttendanceRecord[] = [];
@@ -259,12 +293,10 @@ export const useStore = create<AppState>((set, get) => {
               });
             });
 
-            // Sort records chronologically (oldest first) for visual mapping
             records.sort((a, b) => a.dateTimestamp - b.dateTimestamp);
 
             set({ records, recordsLoading: false });
 
-            // Recalculate metrics
             const currentSettings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
             const currentProfile = get().profile;
             calculateAndSetMetrics(records, currentSettings.cycleStartDay, currentSettings.targetPercentage, currentProfile?.semester ?? 1);
@@ -274,21 +306,13 @@ export const useStore = create<AppState>((set, get) => {
           });
 
         } else {
-          // Cleanup subscriptions if user logs out
-          if (unsubscribeSettings) {
-            unsubscribeSettings();
-            unsubscribeSettings = null;
-          }
-          if (unsubscribeAttendance) {
-            unsubscribeAttendance();
-            unsubscribeAttendance = null;
-          }
-          if (unsubscribeProfile) {
-            unsubscribeProfile();
-            unsubscribeProfile = null;
-          }
+          if (unsubscribeSettings) { unsubscribeSettings(); unsubscribeSettings = null; }
+          if (unsubscribeAttendance) { unsubscribeAttendance(); unsubscribeAttendance = null; }
+          if (unsubscribeProfile) { unsubscribeProfile(); unsubscribeProfile = null; }
+          if (unsubscribeTimetable) { unsubscribeTimetable(); unsubscribeTimetable = null; }
           set({
             settings: null,
+            timetable: DEFAULT_TIMETABLE,
             records: [],
             profile: null,
             overallMetrics: DEFAULT_METRICS,
@@ -307,7 +331,6 @@ export const useStore = create<AppState>((set, get) => {
       const { user } = get();
       if (!user) throw new Error("No authenticated user");
 
-      // Boundary check
       const boundedDay = Math.min(Math.max(1, Math.round(cycleStartDay)), 28);
       const boundedPercentage = Math.min(Math.max(0, Math.round(targetPercentage)), 100);
 
@@ -329,11 +352,27 @@ export const useStore = create<AppState>((set, get) => {
       }, { merge: true });
     },
 
+    updateTimetable: async (timetable) => {
+      const { user } = get();
+      if (!user) throw new Error("No authenticated user");
+
+      if (user.isAnonymous) {
+        localStorage.setItem("bunkd_guest_timetable", JSON.stringify(timetable));
+        set({ timetable });
+        return;
+      }
+
+      if (!db) throw new Error("Database not initialized");
+
+      const timetableRef = doc(db, "users", user.uid, "settings", "timetable");
+      await setDoc(timetableRef, timetable, { merge: true });
+      set({ timetable });
+    },
+
     logAttendance: async (date, attended, total, isHoliday) => {
       const { user } = get();
       if (!user) throw new Error("No authenticated user");
 
-      // Validations
       if (attended > total) {
         throw new Error("Attended lectures cannot exceed total lectures");
       }
@@ -389,7 +428,6 @@ export const useStore = create<AppState>((set, get) => {
       const { user } = get();
       if (!user) throw new Error("No authenticated user");
 
-      // Validations
       if (attended > total) {
         throw new Error("Attended lectures cannot exceed total lectures");
       }
@@ -556,6 +594,72 @@ export const useStore = create<AppState>((set, get) => {
       set({ records: [] });
       const settings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
       calculateAndSetMetrics([], settings.cycleStartDay, settings.targetPercentage, 1);
+    },
+
+    exportAttendanceCSV: () => {
+      const { records } = get();
+      if (records.length === 0) return "";
+
+      const headers = ["Date", "Attended Lectures", "Total Lectures", "Is Holiday", "Record Type", "Semester"];
+      const rows = records.map(r => {
+        const d = new Date(r.dateTimestamp);
+        const dateFormatted = r.id === "baseline" ? "Baseline" : d.toISOString().split("T")[0];
+        return [
+          dateFormatted,
+          r.attendedLectures,
+          r.totalLectures,
+          r.isHoliday ? "Yes" : "No",
+          r.type || "daily",
+          r.semester ?? 1
+        ].join(",");
+      });
+
+      return [headers.join(","), ...rows].join("\n");
+    },
+
+    importAttendanceRecords: async (importedRecords) => {
+      const { user } = get();
+      if (!user) throw new Error("No authenticated user");
+      if (!importedRecords || importedRecords.length === 0) return 0;
+
+      if (user.isAnonymous) {
+        const existing = [...get().records];
+        const existingMap = new Map(existing.map(r => [r.id || "", r]));
+        
+        importedRecords.forEach(r => {
+          if (r.id) existingMap.set(r.id, r);
+        });
+
+        const merged = Array.from(existingMap.values());
+        merged.sort((a, b) => a.dateTimestamp - b.dateTimestamp);
+
+        localStorage.setItem("bunkd_guest_attendance", JSON.stringify(merged));
+        set({ records: merged });
+        const settings = get().settings ?? { cycleStartDay: 1, targetPercentage: 75 };
+        const currentSem = get().profile?.semester ?? 1;
+        calculateAndSetMetrics(merged, settings.cycleStartDay, settings.targetPercentage, currentSem);
+        return importedRecords.length;
+      }
+
+      const currentDb = db;
+      if (!currentDb) throw new Error("Database not initialized");
+
+      const batch = writeBatch(currentDb);
+      importedRecords.forEach(r => {
+        if (!r.id) return;
+        const ref = doc(currentDb, "users", user.uid, "attendance", r.id);
+        batch.set(ref, {
+          dateTimestamp: r.dateTimestamp,
+          totalLectures: r.totalLectures,
+          attendedLectures: r.attendedLectures,
+          isHoliday: r.isHoliday,
+          type: r.type || "daily",
+          semester: r.semester ?? 1
+        }, { merge: true });
+      });
+
+      await batch.commit();
+      return importedRecords.length;
     },
 
     signInWithGoogle: async () => {

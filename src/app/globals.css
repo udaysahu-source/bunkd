@@ -2,40 +2,57 @@
 @import "tailwindcss";
 
 :root {
-  --brand-primary: #6D5CE0;
-  --brand-hover: #5A49D0;
-  --brand-light: #A499F1;
+  --brand-primary: #6d5ce0;       /* Signature Bunkd Purple */
+  --brand-hover: #5a49d0;         /* Deep Purple Hover */
+  --brand-light: #8e7ff7;         /* Light Purple */
+  --brand-subtle: #ede9fe;        /* Purple 100 / Subtle */
   
-  --success-color: #22C55E;
-  --danger-color: #EF4444;
-  --warning-color: #F59E0B;
+  --success-color: #059669;       /* Emerald 600 */
+  --success-subtle: #d1fae5;      /* Emerald 100 */
+  --danger-color: #dc2626;        /* Rose / Red 600 */
+  --danger-subtle: #fee2e2;       /* Rose 100 */
+  --warning-color: #d97706;       /* Amber 600 */
+  --warning-subtle: #fef3c7;      /* Amber 100 */
   
-  --text-heading: #111827;
-  --text-body: #4B5563;
-  --card-bg: rgba(248, 247, 252, 0.85); /* #F8F7FC with alpha */
-  --card-border: rgba(229, 231, 235, 0.8); /* #E5E7EB with alpha */
+  --text-heading: #111827;        /* Gray 900 */
+  --text-body: #374151;           /* Gray 700 */
+  --text-muted: #6b7280;          /* Gray 500 */
   
-  --bunkd-bg: #f9fafb;
+  --app-bg: #f9f9fc;              /* Crisp clean light bg */
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;         /* Gray 200 */
+  --card-hover-border: #d1d5db;   /* Gray 300 */
+  --card-inset: #f3f4f6;          /* Gray 100 */
 }
 
 .dark {
-  --text-heading: #F9FAFB;
-  --text-body: #9CA3AF;
-  --card-bg: rgba(30, 27, 46, 0.75); /* #1E1B2E with alpha */
-  --card-border: rgba(45, 42, 61, 0.7); /* #2D2A3D with alpha */
+  --brand-primary: #8b5cf6;       /* Vibrant Purple in Dark */
+  --brand-hover: #7c3aed;         /* Purple 600 */
+  --brand-light: #a78bfa;         /* Purple 400 */
+  --brand-subtle: #2e1065;        /* Purple 950 */
   
-  --brand-primary: #6D5CE0;
-  --brand-hover: #8172F0;
-  --brand-light: #8E7FF7;
+  --success-color: #10b981;       /* Emerald 500 */
+  --success-subtle: #064e3b;      /* Emerald 900 */
+  --danger-color: #f43f5e;        /* Rose 500 */
+  --danger-subtle: #881337;       /* Rose 900 */
+  --warning-color: #f59e0b;       /* Amber 500 */
+  --warning-subtle: #78350f;      /* Amber 900 */
   
-  --bunkd-bg: #12101E;
+  --text-heading: #f9fafb;        /* Gray 50 */
+  --text-body: #d1d5db;           /* Gray 300 */
+  --text-muted: #9ca3af;          /* Gray 400 */
+  
+  --app-bg: #12101e;              /* Deep Bunkd Dark Bg */
+  --card-bg: #1a162b;             /* Bunkd Dark Card */
+  --card-border: #2c2547;         /* Bunkd Dark Border */
+  --card-hover-border: #3d3460;   /* Bunkd Dark Hover Border */
+  --card-inset: #151224;          /* Bunkd Dark Inset */
 }
 
 @theme {
   --font-sans: var(--font-geist);
   --font-mono: var(--font-geist-mono);
   
-  /* Refined Bunkd Color System */
   --color-bunkd-brand: var(--brand-primary);
   --color-bunkd-brand-hover: var(--brand-hover);
   --color-bunkd-brand-light: var(--brand-light);
@@ -44,253 +61,273 @@
   --color-bunkd-error: var(--danger-color);
   --color-bunkd-warning: var(--warning-color);
   
-  --color-bunkd-bg: var(--bunkd-bg);
-  --color-bunkd-bg-dark: var(--bunkd-bg);
-  
+  --color-bunkd-bg: var(--app-bg);
+  --color-bunkd-bg-dark: var(--app-bg);
   --color-bunkd-card: var(--card-bg);
   --color-bunkd-card-dark: var(--card-bg);
-  
   --color-bunkd-border: var(--card-border);
   --color-bunkd-border-dark: var(--card-border);
-  
-  /* Overrides for standard Tailwind colors to catch existing layout styling in the app */
-  --color-purple-400: var(--brand-light);
-  --color-purple-500: var(--brand-primary);
-  --color-purple-600: var(--brand-primary);
-  --color-purple-650: var(--brand-hover);
-  --color-purple-700: var(--brand-hover);
-  --color-purple-750: var(--brand-hover);
-  
-  --color-emerald-400: var(--success-color);
-  --color-emerald-500: var(--success-color);
-  --color-emerald-600: var(--success-color);
-  --color-emerald-650: var(--success-color);
-  --color-emerald-700: var(--success-color);
-  
-  --color-rose-400: var(--danger-color);
-  --color-rose-450: var(--danger-color);
-  --color-rose-500: var(--danger-color);
-  --color-rose-600: var(--danger-color);
-  --color-rose-650: var(--danger-color);
-  --color-rose-700: var(--danger-color);
-  
-  --color-red-400: var(--danger-color);
-  --color-red-500: var(--danger-color);
-  --color-red-600: var(--danger-color);
-  --color-red-700: var(--danger-color);
-  
-  /* Theme tokens */
-  --color-text-heading: var(--text-heading);
-  --color-text-body: var(--text-body);
-  --color-card-bg: var(--card-bg);
-  --color-card-border: var(--card-border);
 }
 
 @variant dark (&:where(.dark, .dark *));
 
-/* Smooth transitions for theme toggle */
-* {
-  transition-property: color, background-color, border-color, box-shadow;
-  transition-duration: 200ms;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* Smooth theme transitions */
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
-/* Hide scrollbar for clean app-shell feel */
+body {
+  background-color: var(--app-bg);
+  color: var(--text-body);
+  font-family: var(--font-sans, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
 ::-webkit-scrollbar {
-  display: none;
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
 }
 
-html, body {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  overscroll-behavior-y: contain;
-}
-
-/* ──── Glassmorphism System ──── */
-
-/* ──── Refined Elevation & Glass System ──── */
-
-/* Quiet background base */
-.glass-bg-mesh {
-  background: 
-    radial-gradient(ellipse 70% 50% at 50% 0%, rgba(109, 92, 224, 0.04) 0%, transparent 60%);
-}
-
-/* Primary card — subtle surface with crisp 1px border */
-.glass-card {
-  background: var(--card-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* Production-grade Card & Surface Utilities */
+.app-card {
+  background-color: var(--card-bg);
   border: 1px solid var(--card-border);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+.dark .app-card {
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.3);
 }
 
-.dark .glass-card {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-}
-
-.glass-card:hover {
-  background: var(--card-bg);
-  border-color: var(--card-border);
-}
-
-.dark .glass-card:hover {
-  background: var(--card-bg);
-  border-color: var(--card-border);
-}
-
-/* Hero card — prioritized elevation without heavy glow */
-.glass-card-hero {
-  background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.app-card-inset {
+  background-color: var(--card-inset);
   border: 1px solid var(--card-border);
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.05),
-    0 1px 0 rgba(255, 255, 255, 0.4) inset;
+  border-radius: 0.75rem;
 }
 
-.dark .glass-card-hero {
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.25),
-    0 1px 0 rgba(255, 255, 255, 0.05) inset;
-}
-
-/* Elevated card for modals & overlays */
-.glass-card-elevated {
-  background: var(--card-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid var(--card-border);
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.08);
-}
-
-.dark .glass-card-elevated {
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
-}
-
-/* Subtle inner panel — nested stat boxes */
-.glass-inner {
-  background: rgba(0, 0, 0, 0.015);
-  border: 1px solid var(--card-border);
-}
-
-.dark .glass-inner {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* Primary Brand Action Button (Solid crisp purple) */
-.glass-button-brand {
-  background: var(--brand-primary);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 2px 10px rgba(109, 92, 224, 0.2);
-  transition: all 180ms ease-out;
-}
-
-.glass-button-brand:hover {
-  background: var(--brand-hover);
-  box-shadow: 0 4px 16px rgba(109, 92, 224, 0.3);
-}
-
-/* Glass nav bar */
-.glass-nav {
-  background: var(--card-bg);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-top: 1px solid var(--card-border);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.03);
-}
-
-.dark .glass-nav {
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.25);
-}
-
-/* Glass header */
-.glass-header {
-  background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+/* Header & Navigation Shell */
+.app-header {
+  background-color: var(--card-bg);
   border-bottom: 1px solid var(--card-border);
 }
 
-.dark .glass-header {
-  background: var(--card-bg);
+.app-sidebar {
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--card-border);
 }
 
-/* Glass input */
-.glass-input {
-  background: rgba(0, 0, 0, 0.015);
+.app-nav-bottom {
+  background-color: var(--card-bg);
+  border-top: 1px solid var(--card-border);
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.03);
+}
+.dark .app-nav-bottom {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.4);
+}
+
+/* Primary Button */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--brand-primary);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(109, 92, 224, 0.25);
+}
+.btn-primary:hover {
+  background-color: var(--brand-hover);
+  box-shadow: 0 2px 6px rgba(109, 92, 224, 0.35);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Secondary Button */
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--card-bg);
+  color: var(--text-heading);
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
   border: 1px solid var(--card-border);
-  transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-secondary:hover {
+  background-color: var(--card-inset);
+  border-color: var(--card-hover-border);
+}
+.btn-secondary:active {
+  transform: scale(0.98);
 }
 
-.glass-input::placeholder {
-  color: #9ca3af;
-  opacity: 0.85;
+/* Destructive Button */
+.btn-destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: #fee2e2;
+  color: #b91c1c;
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #fecaca;
+  cursor: pointer;
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark .btn-destructive {
+  background-color: #450a0a;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+}
+.btn-destructive:hover {
+  background-color: #fecaca;
+}
+.dark .btn-destructive:hover {
+  background-color: #5c0f0f;
 }
 
-.dark .glass-input {
-  background: rgba(255, 255, 255, 0.03);
+/* Form Input */
+.form-input {
+  width: 100%;
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-heading);
+  font-size: 0.875rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: 0.75rem;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
-
-.dark .glass-input::placeholder {
-  color: #6b7280;
-  opacity: 0.7;
-}
-
-.glass-input:focus {
-  background: rgba(0, 0, 0, 0.02);
+.form-input:focus {
   border-color: var(--brand-primary);
   box-shadow: 0 0 0 3px rgba(109, 92, 224, 0.15);
 }
-
-.dark .glass-input:focus {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--brand-primary);
-  box-shadow: 0 0 0 3px rgba(109, 92, 224, 0.15);
+.form-input:disabled {
+  background-color: var(--card-inset);
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-/* Glow accent (restrained) */
-.glow-purple {
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.12);
+/* Status Badges */
+.badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+.dark .badge-success {
+  background-color: #064e3b;
+  color: #6ee7b7;
+  border-color: #065f46;
 }
 
-/* Border shimmer replacement: clean 1px border */
-.glass-shimmer {
-  border: 1px solid rgba(0, 0, 0, 0.08);
+.badge-warning {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+.dark .badge-warning {
+  background-color: #78350f;
+  color: #fcd34d;
+  border-color: #92400e;
 }
 
-.dark .glass-shimmer {
-  border: 1px solid rgba(255, 255, 255, 0.07);
+.badge-danger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: #ffe4e6;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+.dark .badge-danger {
+  background-color: #881337;
+  color: #fda4af;
+  border-color: #9f1239;
 }
 
-/* Typography Scale */
-@layer components {
-  .text-hero {
-    @apply text-5xl sm:text-6xl font-bold tracking-tight;
-  }
-  
-  .text-page-title {
-    @apply text-4xl sm:text-5xl font-bold tracking-tight;
-  }
-  
-  .text-section-title {
-    @apply text-2xl sm:text-3xl font-bold tracking-tight;
-  }
-  
-  .text-card-title {
-    @apply text-lg sm:text-xl font-semibold;
-  }
-  
-  .text-body {
-    @apply text-base font-medium;
-  }
-  
-  .text-caption {
-    @apply text-sm font-normal;
-  }
-  
-  .text-label {
-    @apply text-xs font-medium;
-  }
+.badge-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+.dark .badge-neutral {
+  background-color: #1e293b;
+  color: #94a3b8;
+  border-color: #334155;
+}
+
+.badge-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: #ede9fe;
+  color: #6d5ce0;
+  border: 1px solid #ddd6fe;
+}
+.dark .badge-brand {
+  background-color: #2e1065;
+  color: #c4b5fd;
+  border-color: #4c1d95;
 }

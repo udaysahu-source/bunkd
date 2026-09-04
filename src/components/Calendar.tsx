@@ -1,35 +1,69 @@
 "use client";
 // File: src/components/Calendar.tsx
-import React, { useState } from "react";
-import { useStore, dateToDocId } from "../store/useStore";
+import React, { useState, useMemo } from "react";
+import { useStore, dateToDocId, getMidnightTimestamp } from "../store/useStore";
 import { motion, AnimatePresence } from "framer-motion";
 import {
+  CalendarDays,
+  Table as TableIcon,
   ChevronLeft,
   ChevronRight,
-  Sun,
-  XCircle,
-  CheckCircle2,
+  Search,
+  Download,
+  Upload,
   Trash2,
-  Plus,
-  AlertTriangle
+  Edit2,
+  FileSpreadsheet,
+  AlertTriangle,
+  X
 } from "lucide-react";
-import type { AttendanceRecord } from "../lib/attendanceMath";
+import { calculatePercentage, type AttendanceRecord } from "../lib/attendanceMath";
 
 export default function Calendar() {
-  const { records, logAttendance, deleteRecord, showToast, settings } = useStore();
+  const {
+    records,
+    logAttendance,
+    deleteRecord,
+    showToast,
+    settings,
+    profile,
+    timetable,
+    exportAttendanceCSV,
+    importAttendanceRecords
+  } = useStore();
+
   const target = settings?.targetPercentage ?? 75;
-  const [showAllLogs, setShowAllLogs] = useState(false);
+  const currentSemester = profile?.semester ?? 1;
+
+  // View mode: "calendar" or "table"
+  const [viewMode, setViewMode] = useState<"calendar" | "table">("calendar");
+
+  // Calendar navigation state
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  
-  // Log form state
+
+  // Form State for Log Modal
   const [attended, setAttended] = useState("1");
   const [total, setTotal] = useState("1");
   const [isHoliday, setIsHoliday] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
-  const [recordToDelete, setRecordToDelete] = useState<AttendanceRecord | null>(null);
 
+  // Table filter & search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "full" | "partial" | "missed" | "holiday">("all");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
+
+  // Delete confirmation dialog
+  const [confirmDeleteDate, setConfirmDeleteDate] = useState<string | null>(null);
+
+  // CSV Import Modal
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+
+  // Calendar calculations
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
@@ -38,32 +72,29 @@ export default function Calendar() {
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Calendar calculations
   const firstDayIndex = new Date(year, month, 1).getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
-  
-  // Create days array
+
   const days = [];
-  // Padding cells for previous month
   for (let i = 0; i < firstDayIndex; i++) {
     days.push(null);
   }
-  // Days of current month
   for (let d = 1; d <= totalDays; d++) {
     days.push(new Date(year, month, d));
   }
 
-  const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
-  };
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const goToToday = () => setCurrentDate(new Date());
 
-  const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
-  };
+  // Filter semester records
+  const semesterRecords = useMemo(() => {
+    return records.filter(r => (r.semester ?? currentSemester) === currentSemester);
+  }, [records, currentSemester]);
 
-  const handleDayClick = (date: Date) => {
+  // Open Log modal with sensible defaults from timetable if not logged yet
+  const handleSelectDay = (date: Date) => {
     setSelectedDate(date);
-    setShowConfirmDelete(false);
     const docId = dateToDocId(date);
     const existing = records.find(r => r.id === docId);
 
@@ -72,14 +103,16 @@ export default function Calendar() {
       setTotal(existing.totalLectures.toString());
       setIsHoliday(existing.isHoliday);
     } else {
-      setAttended("1");
-      setTotal("1");
-      setIsHoliday(false);
+      const dayOfWeek = date.getDay();
+      const plannedSlots = timetable[dayOfWeek] ?? 4;
+      setAttended(plannedSlots > 0 ? plannedSlots.toString() : "0");
+      setTotal(plannedSlots > 0 ? plannedSlots.toString() : "4");
+      setIsHoliday(plannedSlots === 0 && (dayOfWeek === 0 || dayOfWeek === 6));
     }
     setValidationError(null);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveAttendance = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate) return;
     setValidationError(null);
@@ -89,15 +122,15 @@ export default function Calendar() {
 
     if (!isHoliday) {
       if (isNaN(attVal) || isNaN(totVal)) {
-        setValidationError("Please enter valid numbers");
+        setValidationError("Please enter valid positive numbers");
         return;
       }
       if (attVal < 0 || totVal < 0) {
-        setValidationError("Lectures cannot be negative");
+        setValidationError("Lecture counts cannot be negative");
         return;
       }
       if (attVal > totVal) {
-        setValidationError("Attended lectures cannot exceed total lectures");
+        setValidationError("Attended lectures cannot exceed total planned lectures");
         return;
       }
     }
@@ -105,435 +138,580 @@ export default function Calendar() {
     try {
       await logAttendance(selectedDate, attVal, totVal, isHoliday);
       setSelectedDate(null);
-      showToast("Attendance saved successfully!", "success");
+      showToast("Attendance logged successfully", "success");
     } catch (err) {
       const error = err as Error;
-      setValidationError(error.message || "Failed to log attendance");
+      setValidationError(error.message || "Failed to save attendance");
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedDate) return;
+  const handleDeleteConfirm = async () => {
+    if (!confirmDeleteDate) return;
     try {
-      const docId = dateToDocId(selectedDate);
-      await deleteRecord(docId);
-      setSelectedDate(null);
-      setShowConfirmDelete(false);
-      showToast("Record deleted successfully", "info");
-    } catch (err) {
-      console.error("Failed to delete record", err);
+      await deleteRecord(confirmDeleteDate);
+      setConfirmDeleteDate(null);
+      if (selectedDate && dateToDocId(selectedDate) === confirmDeleteDate) {
+        setSelectedDate(null);
+      }
+      showToast("Record deleted", "info");
+    } catch {
+      showToast("Failed to delete record", "error");
     }
   };
+
+  // Export CSV
+  const handleExportCSV = () => {
+    const csvContent = exportAttendanceCSV();
+    if (!csvContent) {
+      showToast("No records available to export", "info");
+      return;
+    }
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `bunkd_attendance_sem${currentSemester}_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Attendance data exported to CSV", "success");
+  };
+
+  // Import CSV text parser
+  const handleImportCSVSubmit = async () => {
+    if (!importText.trim()) return;
+    setImporting(true);
+    try {
+      const lines = importText.trim().split("\n");
+      const parsedRecords: AttendanceRecord[] = [];
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line || (i === 0 && line.toLowerCase().includes("date"))) continue; // skip header
+
+        const [dateStr, attStr, totStr, holidayStr, typeStr, semStr] = line.split(",").map(s => s.trim());
+        if (!dateStr) continue;
+
+        let midnightTs = Date.now();
+        let docId = dateStr;
+
+        if (dateStr.toLowerCase() === "baseline") {
+          docId = "baseline";
+        } else {
+          const parsedD = new Date(dateStr);
+          if (isNaN(parsedD.getTime())) continue;
+          midnightTs = getMidnightTimestamp(parsedD);
+          docId = dateToDocId(parsedD);
+        }
+
+        parsedRecords.push({
+          id: docId,
+          dateTimestamp: midnightTs,
+          attendedLectures: parseInt(attStr) || 0,
+          totalLectures: parseInt(totStr) || 0,
+          isHoliday: holidayStr?.toLowerCase() === "yes" || holidayStr?.toLowerCase() === "true",
+          type: docId === "baseline" ? "baseline" : (typeStr as "daily" | "baseline") || "daily",
+          semester: parseInt(semStr) || currentSemester
+        });
+      }
+
+      const count = await importAttendanceRecords(parsedRecords);
+      setShowImportModal(false);
+      setImportText("");
+      showToast(`Imported ${count} attendance records successfully`, "success");
+    } catch {
+      showToast("Failed to parse CSV records. Ensure valid formatting.", "error");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  // Filtered & Sorted Table Records
+  const filteredTableRecords = useMemo(() => {
+    let list = [...semesterRecords];
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(r => {
+        const dStr = r.id === "baseline" ? "baseline" : new Date(r.dateTimestamp).toISOString().split("T")[0];
+        return dStr.includes(q);
+      });
+    }
+
+    if (statusFilter === "holiday") {
+      list = list.filter(r => r.isHoliday);
+    } else if (statusFilter === "full") {
+      list = list.filter(r => !r.isHoliday && r.totalLectures > 0 && r.attendedLectures === r.totalLectures);
+    } else if (statusFilter === "partial") {
+      list = list.filter(r => !r.isHoliday && r.totalLectures > 0 && r.attendedLectures > 0 && r.attendedLectures < r.totalLectures);
+    } else if (statusFilter === "missed") {
+      list = list.filter(r => !r.isHoliday && r.totalLectures > 0 && r.attendedLectures === 0);
+    }
+
+    list.sort((a, b) => {
+      return sortOrder === "desc"
+        ? b.dateTimestamp - a.dateTimestamp
+        : a.dateTimestamp - b.dateTimestamp;
+    });
+
+    return list;
+  }, [semesterRecords, searchQuery, statusFilter, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTableRecords.length / pageSize));
+  const paginatedRecords = filteredTableRecords.slice((page - 1) * pageSize, page * pageSize);
 
   return (
-    <div className="space-y-6 pb-24">
-      <div>
-        <h2 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-none">
-          Calendar
-        </h2>
-        <p className="text-zinc-550 dark:text-zinc-500 text-sm mt-1">
-          Tap a date to update your status, log classes, or override holidays
-        </p>
+    <div className="space-y-6 pb-20">
+      {/* Header & View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 flex items-center gap-2.5">
+            <CalendarDays className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <span>Attendance Calendar & Logs</span>
+          </h1>
+          <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            Review calendar attendance, manage daily overrides, or audit logs in table view.
+          </p>
+        </div>
+
+        {/* View Toggle & CSV Actions */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700">
+            <button
+              type="button"
+              onClick={() => setViewMode("calendar")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "calendar"
+                  ? "bg-white dark:bg-[#1a162b] text-purple-600 dark:text-purple-400 shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+              <span>Calendar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("table")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                viewMode === "table"
+                  ? "bg-white dark:bg-[#1a162b] text-purple-600 dark:text-purple-400 shadow-xs"
+                  : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
+              }`}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>Table</span>
+            </button>
+          </div>
+
+          <button
+            onClick={handleExportCSV}
+            title="Export CSV"
+            className="btn-secondary text-xs px-2.5 py-2"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </button>
+
+          <button
+            onClick={() => setShowImportModal(true)}
+            title="Import CSV"
+            className="btn-secondary text-xs px-2.5 py-2"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Import</span>
+          </button>
+        </div>
       </div>
 
-      {/* Calendar Grid Container */}
-      <div className="glass-card rounded-3xl p-4 sm:p-6 glass-shimmer">
-        {/* Month Selector */}
-        <div className="flex items-center justify-between mb-5">
-          <h3 className="text-base sm:text-lg font-bold text-zinc-800 dark:text-white">
-            {monthNames[month]} {year}
-          </h3>
-          <div className="flex items-center gap-1.5">
-            <motion.button
-              onClick={prevMonth}
-              whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 flex items-center justify-center hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-white rounded-xl transition-all cursor-pointer border border-transparent hover:border-black/[0.05] dark:hover:border-white/[0.06]"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </motion.button>
-            <motion.button
-              onClick={nextMonth}
-              whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 flex items-center justify-center hover:bg-black/[0.03] dark:hover:bg-white/[0.04] text-zinc-550 dark:text-zinc-450 hover:text-zinc-800 dark:hover:text-white rounded-xl transition-all cursor-pointer border border-transparent hover:border-black/[0.05] dark:hover:border-white/[0.06]"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </motion.button>
+      {/* ──── CALENDAR VIEW ──── */}
+      {viewMode === "calendar" && (
+        <div className="app-card p-4 sm:p-6 space-y-5">
+          {/* Calendar Month Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                {monthNames[month]} {year}
+              </h2>
+              <button
+                onClick={goToToday}
+                className="text-xs font-semibold px-2 py-1 rounded-md bg-purple-50 dark:bg-purple-950 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900 cursor-pointer"
+              >
+                Today
+              </button>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={prevMonth}
+                aria-label="Previous Month"
+                className="w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer text-zinc-600 dark:text-zinc-300"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                onClick={nextMonth}
+                aria-label="Next Month"
+                className="w-9 h-9 rounded-lg border border-zinc-200 dark:border-zinc-700 flex items-center justify-center hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer text-zinc-600 dark:text-zinc-300"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Days of Week Headers */}
-        <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3 text-center">
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((dayName) => (
-            <span
-              key={dayName}
-              className="text-xs sm:text-xs font-extrabold uppercase tracking-wider text-zinc-500"
-            >
-              {dayName}
-            </span>
-          ))}
-        </div>
+          {/* Weekday Labels */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(dayName => (
+              <span key={dayName} className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                {dayName}
+              </span>
+            ))}
+          </div>
 
-        {/* Days Grid - Animated Transitions */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${year}-${month}`}
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            transition={{ duration: 0.22, ease: "easeOut" }}
-            className="grid grid-cols-7 gap-1 sm:gap-2"
-          >
-            {days.map((date, index) => {
+          {/* Calendar Days Grid */}
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
+            {days.map((date, idx) => {
               if (!date) {
-                return <div key={`empty-${index}`} className="aspect-square" />;
+                return <div key={`empty-${idx}`} className="h-16 sm:h-20 rounded-xl bg-transparent" />;
               }
 
               const docId = dateToDocId(date);
               const record = records.find(r => r.id === docId);
-              const isToday = new Date().toDateString() === date.toDateString();
+              const todayStr = dateToDocId(new Date());
+              const isToday = docId === todayStr;
 
-              let bgClass = "bg-white/[0.02] hover:bg-purple-500/10 hover:text-purple-300";
-              let textClass = "text-zinc-300";
-              let borderClass = "border border-white/5";
+              let dayBadge = null;
+              let cardBg = "bg-zinc-50/60 dark:bg-zinc-900/40 border-zinc-200/70 dark:border-zinc-800/80";
 
               if (record) {
                 if (record.isHoliday) {
-                  bgClass = "bg-amber-500/15 hover:bg-amber-500/20";
-                  textClass = "text-amber-300 font-bold";
-                  borderClass = "border border-amber-500/30";
-                } else {
-                  const ratio = record.totalLectures > 0 ? record.attendedLectures / record.totalLectures : 0;
-                  if (ratio >= 0.75) {
-                    bgClass = "bg-emerald-500/15 hover:bg-emerald-500/20";
-                    textClass = "text-emerald-400 font-bold";
-                    borderClass = "border border-emerald-500/30";
-                  } else if (record.totalLectures > 0) {
-                    bgClass = "bg-rose-500/15 hover:bg-rose-500/20";
-                    textClass = "text-rose-400 font-bold";
-                    borderClass = "border border-rose-500/30";
+                  cardBg = "bg-amber-50/70 dark:bg-amber-950/30 border-amber-200/80 dark:border-amber-900/40";
+                  dayBadge = <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400">Holiday</span>;
+                } else if (record.totalLectures > 0) {
+                  const pct = calculatePercentage(record.attendedLectures, record.totalLectures);
+                  const isGood = pct >= target;
+                  if (isGood) {
+                    cardBg = "bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-200/80 dark:border-emerald-900/40";
+                  } else {
+                    cardBg = "bg-rose-50/70 dark:bg-rose-950/30 border-rose-200/80 dark:border-rose-900/40";
                   }
+                  dayBadge = (
+                    <span className={`text-[11px] font-extrabold ${isGood ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+                      {record.attendedLectures}/{record.totalLectures}
+                    </span>
+                  );
                 }
               }
 
-              if (isToday) {
-                borderClass = "border-2 border-purple-500 ring-2 ring-purple-500/20";
-              }
-
               return (
-                <motion.button
+                <button
                   key={docId}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleDayClick(date)}
-                  className={`aspect-square rounded-xl ${bgClass} ${borderClass} p-1 sm:p-1.5 flex flex-col justify-between items-center relative cursor-pointer group transition-all select-none`}
+                  type="button"
+                  onClick={() => handleSelectDay(date)}
+                  className={`h-16 sm:h-20 p-1.5 sm:p-2 rounded-xl border flex flex-col justify-between items-start text-left transition-all hover:border-purple-500 cursor-pointer ${cardBg} ${
+                    isToday ? "ring-2 ring-purple-500 font-bold" : ""
+                  }`}
                 >
-                  {/* Day number */}
-                  <span className={`text-xs sm:text-xs font-bold ${textClass}`}>
-                    {date.getDate()}
-                  </span>
-
-                  {/* Status Indicator */}
-                  <div className="w-full flex items-center justify-center min-h-[14px]">
-                    {record ? (
-                      record.isHoliday ? (
-                        <Sun className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400" />
-                      ) : (
-                        <span className="text-xs sm:text-xs font-extrabold tracking-tighter">
-                          {record.attendedLectures}/{record.totalLectures}
-                        </span>
-                      )
-                    ) : null}
+                  <div className="flex items-center justify-between w-full">
+                    <span className={`text-xs sm:text-sm font-semibold ${isToday ? "text-purple-600 dark:text-purple-400" : "text-zinc-700 dark:text-zinc-300"}`}>
+                      {date.getDate()}
+                    </span>
+                    {isToday && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-purple-600 dark:bg-purple-400" />
+                    )}
                   </div>
-                </motion.button>
+                  <div className="w-full truncate">{dayBadge}</div>
+                </button>
               );
             })}
-          </motion.div>
-        </AnimatePresence>
+          </div>
 
-        {/* Calendar Legend */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-bold text-zinc-550 dark:text-zinc-400 mt-5 pt-4 border-t border-black/5 dark:border-white/5 select-none">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-emerald-500/15 border border-emerald-500/30" />
-            <span>On Track (≥{target}%)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-rose-500/15 border border-rose-500/30" />
-            <span>Below Target (&lt;{target}%)</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-              <Sun className="w-2.5 h-2.5 text-amber-400" />
-            </div>
-            <span>Holiday / Weekend</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-white/[0.02] border border-white/5" />
-            <span>No Log</span>
+          {/* Legend */}
+          <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 dark:text-zinc-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-emerald-500/20 border border-emerald-500" />
+              <span>On Target ({target}%+)</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-rose-500/20 border border-rose-500" />
+              <span>Below Target</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-amber-500/20 border border-amber-500" />
+              <span>Holiday / Off</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full ring-2 ring-purple-500" />
+              <span>Today</span>
+            </span>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Recent Log list inside Calendar */}
-      {(() => {
-        const formatDateString = (timestamp: number) => {
-          const date = new Date(timestamp);
-          return date.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short" });
-        };
-        const dailyRecords = records.filter(r => r.type !== "baseline");
-        const recentRecords = showAllLogs ? dailyRecords.slice().reverse() : dailyRecords.slice().reverse().slice(0, 5);
-
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-extrabold tracking-tight text-zinc-800 dark:text-white">Recent Log</h3>
-              <motion.button
-                onClick={() => handleDayClick(new Date())}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg cursor-pointer transition-all text-xs font-bold text-purple-650 dark:text-purple-400"
-                style={{
-                  background: "rgba(139, 92, 246, 0.08)",
-                  border: "1px solid rgba(139, 92, 246, 0.15)"
-                }}
-              >
-                <Plus className="w-3.5 h-3.5" /><span>Add Log</span>
-              </motion.button>
+      {/* ──── DATA TABLE VIEW ──── */}
+      {viewMode === "table" && (
+        <div className="app-card p-4 sm:p-6 space-y-4">
+          {/* Table Search & Filter Bar */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search date (YYYY-MM-DD)..."
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setPage(1); }}
+                className="form-input pl-9 text-xs"
+              />
             </div>
 
-            <div className="glass-card rounded-2xl overflow-hidden divide-y divide-black/[0.04] dark:divide-white/[0.04] glass-shimmer">
-              <AnimatePresence initial={false}>
-                {recentRecords.length === 0 ? (
-                  <div className="p-6 text-center text-xs text-zinc-500 font-semibold">
-                    No daily logs yet. Tap a date on the calendar above to start logging.
-                  </div>
-                ) : (
-                  recentRecords.map((record) => (
-                    <motion.div
-                      key={record.id}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="p-3.5 flex items-center justify-between hover:bg-black/[0.01] dark:hover:bg-white/[0.02] transition-all group overflow-hidden"
-                    >
-                      <div className="space-y-0.5">
-                        <p className="text-sm font-bold text-zinc-800 dark:text-white">{formatDateString(record.dateTimestamp)}</p>
-                        <div className="flex items-center gap-2">
-                          {record.isHoliday ? (
-                            <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded-lg"
-                              style={{ background: "rgba(245, 158, 11, 0.08)", border: "1px solid rgba(245, 158, 11, 0.15)" }}>
-                              Holiday
-                            </span>
-                          ) : (
-                            <>
-                              <span className="text-xs text-zinc-550 dark:text-zinc-400 font-medium">
-                                <strong className="text-zinc-800 dark:text-white">{record.attendedLectures}/{record.totalLectures}</strong>
-                              </span>
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
-                                record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                                  ? "text-green-600 dark:text-green-400" : "text-red-650 dark:text-red-400"
-                              }`}
-                                style={{
-                                  background: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                                    ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
-                                  border: record.totalLectures > 0 && (record.attendedLectures / record.totalLectures) * 100 >= target
-                                    ? "1px solid rgba(16, 185, 129, 0.15)" : "1px solid rgba(239, 68, 68, 0.15)"
-                                }}
-                              >
-                                {record.totalLectures > 0 ? `${Math.round((record.attendedLectures / record.totalLectures) * 100)}%` : "0%"}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1">
-                        <motion.button
-                          onClick={() => record.id && handleDayClick(new Date(record.dateTimestamp))}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="px-2.5 py-1 text-xs font-bold text-purple-650 dark:text-purple-400 hover:bg-purple-500/10 rounded-md transition-all cursor-pointer border border-transparent hover:border-purple-500/20"
-                        >
-                          Edit
-                        </motion.button>
-                        <motion.button
-                          onClick={() => record.id && setRecordToDelete(record)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="p-2 text-zinc-455 dark:text-zinc-500 hover:text-red-550 dark:hover:text-red-400 rounded-lg hover:bg-red-500/10 transition-all md:opacity-0 md:group-hover:opacity-100 focus:opacity-100 opacity-80 cursor-pointer"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </motion.div>
-                  ))
-                )}
-              </AnimatePresence>
+            {/* Filter Chips */}
+            <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+              {(["all", "full", "partial", "missed", "holiday"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => { setStatusFilter(f); setPage(1); }}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition-colors cursor-pointer border ${
+                    statusFilter === f
+                      ? "bg-purple-50 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800"
+                      : "bg-zinc-50 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100"
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
             </div>
-
-            {dailyRecords.length > 5 && (
-              <button
-                onClick={() => setShowAllLogs(!showAllLogs)}
-                className="w-full text-center text-xs font-bold text-purple-650 dark:text-purple-400 hover:text-purple-500 py-2 cursor-pointer transition-colors"
-              >
-                {showAllLogs ? "Show Less ↑" : `Show All ${dailyRecords.length} Entries ↓`}
-              </button>
-            )}
           </div>
-        );
-      })()}
 
-      {/* Date Logging Modal */}
+          {/* Table Container */}
+          <div className="overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-800">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 font-bold uppercase tracking-wider">
+                <tr>
+                  <th
+                    className="p-3 cursor-pointer hover:text-zinc-900 dark:hover:text-zinc-200"
+                    onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+                  >
+                    Date {sortOrder === "desc" ? "↓" : "↑"}
+                  </th>
+                  <th className="p-3">Type</th>
+                  <th className="p-3">Attended</th>
+                  <th className="p-3">Total</th>
+                  <th className="p-3">Percentage</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                {paginatedRecords.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-zinc-500">
+                      No attendance records found matching current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedRecords.map(record => {
+                    const isBase = record.id === "baseline";
+                    const dStr = isBase ? "Baseline Sync" : record.id || "";
+                    const pct = record.isHoliday || record.totalLectures === 0
+                      ? 0
+                      : calculatePercentage(record.attendedLectures, record.totalLectures);
+
+                    return (
+                      <tr key={record.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/40 transition-colors">
+                        <td className="p-3 font-semibold text-zinc-900 dark:text-zinc-100">
+                          {dStr}
+                        </td>
+                        <td className="p-3 text-zinc-500 capitalize">
+                          {record.type || "daily"}
+                        </td>
+                        <td className="p-3 font-medium text-zinc-900 dark:text-zinc-100">
+                          {record.isHoliday ? "-" : record.attendedLectures}
+                        </td>
+                        <td className="p-3 text-zinc-500">
+                          {record.isHoliday ? "-" : record.totalLectures}
+                        </td>
+                        <td className="p-3 font-bold text-zinc-900 dark:text-zinc-100">
+                          {record.isHoliday ? "-" : `${pct}%`}
+                        </td>
+                        <td className="p-3">
+                          {record.isHoliday ? (
+                            <span className="badge-warning">Holiday</span>
+                          ) : pct >= target ? (
+                            <span className="badge-success">On Track</span>
+                          ) : (
+                            <span className="badge-danger">Below Target</span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {!isBase && record.id && (
+                              <button
+                                onClick={() => {
+                                  const parts = record.id!.split("-");
+                                  if (parts.length === 3) {
+                                    handleSelectDay(new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])));
+                                  }
+                                }}
+                                title="Edit Record"
+                                className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 cursor-pointer"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setConfirmDeleteDate(record.id || null)}
+                              title="Delete Record"
+                              className="p-1.5 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/50 text-rose-500 hover:text-rose-700 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center justify-between text-xs text-zinc-500 pt-2">
+            <span>
+              Showing {filteredTableRecords.length > 0 ? (page - 1) * pageSize + 1 : 0} to{" "}
+              {Math.min(page * pageSize, filteredTableRecords.length)} of {filteredTableRecords.length} entries
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="btn-secondary text-xs px-2.5 py-1 disabled:opacity-30"
+              >
+                Prev
+              </button>
+              <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="btn-secondary text-xs px-2.5 py-1 disabled:opacity-30"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──── LOG / EDIT ATTENDANCE MODAL ──── */}
       <AnimatePresence>
         {selectedDate && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedDate(null)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-md"
-            />
-
-            {/* Modal Card */}
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: "spring", stiffness: 380, damping: 30 }}
-              className="w-full max-w-sm glass-card-elevated rounded-2xl p-6 space-y-5 z-10 glass-shimmer"
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="w-full max-w-md app-card p-6 bg-white dark:bg-[#1a162b] shadow-2xl relative"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-base font-extrabold text-white">
-                    {selectedDate.toLocaleDateString("en-US", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "long"
-                    })}
-                  </h4>
-                  <p className="text-xs text-zinc-550 font-bold uppercase tracking-wider mt-0.5">Update status for this date</p>
-                </div>
-                <motion.button
-                  onClick={() => setSelectedDate(null)}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="text-lg font-bold text-zinc-500 hover:text-white transition-colors cursor-pointer"
-                >
-                  ✕
-                </motion.button>
+              <button
+                onClick={() => setSelectedDate(null)}
+                className="absolute right-4 top-4 p-1.5 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="mb-5">
+                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                  {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" })}
+                </h3>
+                <p className="text-xs text-zinc-500 mt-0.5">
+                  Update class attendance or declare an official holiday.
+                </p>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-4">
+              {validationError && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-400 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{validationError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveAttendance} className="space-y-4">
                 {/* Holiday Toggle */}
-                <div className="flex items-center justify-between p-3.5 glass-inner rounded-xl">
-                  <div className="space-y-0.5">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <Sun className="w-3.5 h-3.5 text-amber-400" />
-                      Mark as Holiday
+                <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700">
+                  <div>
+                    <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 block">
+                      Declare as Holiday / Off Day
                     </span>
-                    <p className="text-xs text-zinc-500">Exclude from metrics</p>
+                    <span className="text-xs text-zinc-500">Excludes this day from percentage calculation</span>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isHoliday}
-                      onChange={(e) => setIsHoliday(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-9 h-5 bg-white/5 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-zinc-500 after:border-none after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600 peer-checked:after:bg-white" />
-                  </label>
+                  <input
+                    type="checkbox"
+                    checked={isHoliday}
+                    onChange={e => setIsHoliday(e.target.checked)}
+                    className="w-4 h-4 text-purple-600 rounded cursor-pointer"
+                  />
                 </div>
 
                 {!isHoliday && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                        Attended
+                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
+                        Attended Classes
                       </label>
                       <input
                         type="number"
                         min="0"
+                        max="20"
                         required
                         value={attended}
-                        onChange={(e) => setAttended(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
+                        onChange={e => setAttended(e.target.value)}
+                        className="form-input font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                        Total
+                      <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-1.5">
+                        Total Planned
                       </label>
                       <input
                         type="number"
-                        min="0"
+                        min="1"
+                        max="20"
                         required
                         value={total}
-                        onChange={(e) => setTotal(e.target.value)}
-                        className="w-full px-4 py-2.5 rounded-lg glass-input text-white text-sm focus:outline-none"
+                        onChange={e => setTotal(e.target.value)}
+                        className="form-input font-bold"
                       />
                     </div>
                   </div>
                 )}
 
-                {validationError && (
-                  <div className="text-xs font-medium text-red-400 rounded-lg p-3 flex items-center gap-2" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                    <XCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{validationError}</span>
-                  </div>
-                )}
+                <div className="flex items-center justify-between pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                  {records.some(r => r.id === dateToDocId(selectedDate)) ? (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDeleteDate(dateToDocId(selectedDate))}
+                      className="btn-destructive text-xs py-2 px-3"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Log</span>
+                    </button>
+                  ) : <div />}
 
-                <div className="flex flex-col gap-3 pt-2">
-                  <div className="flex items-center gap-3">
-                    {records.some(r => r.id === dateToDocId(selectedDate)) && (
-                      <div className="shrink-0 flex items-center">
-                        {showConfirmDelete ? (
-                          <div className="flex items-center gap-1">
-                            <motion.button
-                              type="button"
-                              onClick={handleDelete}
-                              whileTap={{ scale: 0.95 }}
-                              className="py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-md"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Confirm</span>
-                            </motion.button>
-                            <motion.button
-                              type="button"
-                              onClick={() => setShowConfirmDelete(false)}
-                              whileTap={{ scale: 0.95 }}
-                              className="py-3 px-3 glass-inner text-zinc-300 font-bold rounded-xl text-xs transition-all cursor-pointer"
-                            >
-                              Cancel
-                            </motion.button>
-                          </div>
-                        ) : (
-                          <motion.button
-                            type="button"
-                            onClick={() => setShowConfirmDelete(true)}
-                            whileTap={{ scale: 0.95 }}
-                            className="py-3 px-4 text-red-400 font-bold rounded-xl hover:bg-red-500/10 transition-all text-sm flex items-center gap-1 cursor-pointer" style={{ background: 'rgba(239, 68, 68, 0.06)', border: '1px solid rgba(239, 68, 68, 0.12)' }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                          </motion.button>
-                        )}
-                      </div>
-                    )}
-                    
-                    {!showConfirmDelete && (
-                      <motion.button
-                        type="submit"
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="flex-1 py-3 glass-button-brand text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <CheckCircle2 className="w-4 h-4" />
-                        <span>Save Attendance</span>
-                      </motion.button>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDate(null)}
+                      className="btn-secondary text-xs py-2 px-3"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-primary text-xs py-2 px-4"
+                    >
+                      Save Attendance
+                    </button>
                   </div>
                 </div>
               </form>
@@ -542,70 +720,94 @@ export default function Calendar() {
         )}
       </AnimatePresence>
 
-      {/* Confirmation Modal for Delete Record */}
+      {/* ──── DELETE CONFIRMATION MODAL ──── */}
       <AnimatePresence>
-        {recordToDelete && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {confirmDeleteDate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setRecordToDelete(null)}
-              className="absolute inset-0 bg-black/60 backdrop-blur-md"
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="w-full max-w-sm glass-card-elevated rounded-3xl p-6 space-y-4 z-10 glass-shimmer"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm app-card p-6 bg-white dark:bg-[#1a162b] shadow-2xl space-y-4"
             >
-              <div className="flex items-center gap-3 text-red-450 dark:text-red-450">
-                <div className="p-3 bg-red-500/10 rounded-xl">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-extrabold text-gray-900 dark:text-white">Delete Attendance Log?</h4>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">This action cannot be undone</p>
-                </div>
+              <div className="flex items-center gap-3 text-rose-600">
+                <AlertTriangle className="w-6 h-6" />
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Confirm Record Deletion
+                </h3>
               </div>
-
-              <p className="text-xs text-zinc-650 dark:text-zinc-300 leading-relaxed font-medium">
+              <p className="text-xs text-zinc-500 leading-relaxed">
                 Are you sure you want to permanently delete the attendance record for{" "}
-                <strong>
-                  {new Date(recordToDelete.dateTimestamp).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </strong>
-                ?
+                <strong className="text-zinc-800 dark:text-zinc-200">{confirmDeleteDate}</strong>? This will immediately recalculate your safe bunks buffer.
               </p>
-
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2 pt-2">
                 <button
-                  type="button"
-                  onClick={() => setRecordToDelete(null)}
-                  className="flex-1 py-3 glass-inner text-zinc-700 dark:text-zinc-300 font-bold rounded-xl text-xs hover:bg-black/5 dark:hover:bg-white/5 transition-all cursor-pointer border border-zinc-200 dark:border-zinc-800"
+                  onClick={() => setConfirmDeleteDate(null)}
+                  className="btn-secondary text-xs"
                 >
                   Cancel
                 </button>
-                <motion.button
-                  type="button"
-                  onClick={async () => {
-                    if (recordToDelete.id) {
-                      await deleteRecord(recordToDelete.id);
-                      showToast("Record deleted successfully", "info");
-                    }
-                    setRecordToDelete(null);
-                  }}
-                  whileTap={{ scale: 0.95 }}
-                  className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="btn-destructive text-xs"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Yes, Delete</span>
-                </motion.button>
+                  Confirm Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ──── CSV IMPORT MODAL ──── */}
+      <AnimatePresence>
+        {showImportModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg app-card p-6 bg-white dark:bg-[#1a162b] shadow-2xl space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5 text-purple-500" />
+                  <span>Import Attendance CSV</span>
+                </h3>
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="p-1 rounded text-zinc-400 hover:text-zinc-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-zinc-500">
+                Paste raw CSV text below. Format: <code className="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded text-[11px]">Date,Attended,Total,IsHoliday,Type,Semester</code>
+              </p>
+
+              <textarea
+                rows={6}
+                value={importText}
+                onChange={e => setImportText(e.target.value)}
+                placeholder="2026-09-01,4,5,No,daily,1&#10;2026-09-02,5,5,No,daily,1"
+                className="form-input font-mono text-xs"
+              />
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  onClick={() => setShowImportModal(false)}
+                  className="btn-secondary text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleImportCSVSubmit}
+                  disabled={importing || !importText.trim()}
+                  className="btn-primary text-xs"
+                >
+                  {importing ? "Importing..." : "Parse & Import Records"}
+                </button>
               </div>
             </motion.div>
           </div>
